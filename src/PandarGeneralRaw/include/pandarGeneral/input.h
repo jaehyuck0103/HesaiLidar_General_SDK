@@ -19,28 +19,28 @@
 
 #include <netinet/in.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <string>
+#include <unistd.h>
 
 #define ETHERNET_MTU (1500)
 
 typedef struct PandarPacket_s {
-  double stamp;
-  uint8_t data[ETHERNET_MTU];
-  uint32_t size;
+    double stamp;
+    uint8_t data[ETHERNET_MTU];
+    uint32_t size;
 } PandarPacket;
 
 class Input {
- public:
-  Input(uint16_t port, uint16_t gpsPort);
-  ~Input();
-  Input(std::string filePath, int type);
-  int getPacket(PandarPacket *pkt);
+  public:
+    Input(uint16_t port, uint16_t gpsPort);
+    ~Input();
+    Input(std::string filePath, int type);
+    int getPacket(PandarPacket *pkt);
 
- private:
-  int socketForLidar;
-  int socketForGPS;
-  int socketNumber;
+  private:
+    int socketForLidar;
+    int socketForGPS;
+    int socketNumber;
 };
 
-#endif  // SRC_INPUT_H_
+#endif // SRC_INPUT_H_

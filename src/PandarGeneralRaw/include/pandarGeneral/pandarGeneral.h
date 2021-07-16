@@ -26,83 +26,97 @@
 
 #include <boost/function.hpp>
 
-#include "pandarGeneral/point_types.h"
 #include "pandarGeneral/pandarGeneral_internal.h"
+#include "pandarGeneral/point_types.h"
 
 class PandarGeneral_Internal;
 
 class PandarGeneral {
- public:
-  /**
-   * @brief Constructor
-   * @param device_ip         The ip of the device
-   *        lidar_port        The port number of lidar data
-   *        gps_port          The port number of gps data
-   *        pcl_callback      The callback of PCL data structure
-   *        gps_callback      The callback of GPS structure
-   *        start_angle       The start angle of every point cloud ,
-   *                          should be <real angle> * 100.
-   */
-  PandarGeneral(std::string device_ip, uint16_t lidar_port, uint16_t lidar_algorithm_port, uint16_t gps_port,
-            boost::function<void(boost::shared_ptr<PPointCloud>, double)>
-                pcl_callback,
-            boost::function<void(HS_Object3D_Object_List*)> algorithm_callback,
-            boost::function<void(double)> gps_callback, uint16_t start_angle,
-            int tz, int pcl_type, std::string lidar_type, std::string frame_id, std::string timestampType); // the default timestamp type is LiDAR time
+  public:
+    /**
+     * @brief Constructor
+     * @param device_ip         The ip of the device
+     *        lidar_port        The port number of lidar data
+     *        gps_port          The port number of gps data
+     *        pcl_callback      The callback of PCL data structure
+     *        gps_callback      The callback of GPS structure
+     *        start_angle       The start angle of every point cloud ,
+     *                          should be <real angle> * 100.
+     */
+    PandarGeneral(
+        std::string device_ip,
+        uint16_t lidar_port,
+        uint16_t lidar_algorithm_port,
+        uint16_t gps_port,
+        boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+        boost::function<void(HS_Object3D_Object_List *)> algorithm_callback,
+        boost::function<void(double)> gps_callback,
+        uint16_t start_angle,
+        int tz,
+        int pcl_type,
+        std::string lidar_type,
+        std::string frame_id,
+        std::string timestampType); // the default timestamp type is LiDAR time
 
-  /**
-   * @brief Constructor
-   * @param pcap_path         The path of pcap file
-   *        pcl_callback      The callback of PCL data structure
-   *        start_angle       The start angle of every point cloud,
-   *                          should be <real angle> * 100.
-   *        tz                The timezone
-   *        frame_id          The frame id of pcd
-   */
-  PandarGeneral(std::string pcap_path, \
-      boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback, \
-      uint16_t start_angle, int tz, int pcl_type, std::string lidar_type, std::string frame_id, std::string timestampType); // the default timestamp type is LiDAR time
+    /**
+     * @brief Constructor
+     * @param pcap_path         The path of pcap file
+     *        pcl_callback      The callback of PCL data structure
+     *        start_angle       The start angle of every point cloud,
+     *                          should be <real angle> * 100.
+     *        tz                The timezone
+     *        frame_id          The frame id of pcd
+     */
+    PandarGeneral(
+        std::string pcap_path,
+        boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+        uint16_t start_angle,
+        int tz,
+        int pcl_type,
+        std::string lidar_type,
+        std::string frame_id,
+        std::string timestampType); // the default timestamp type is LiDAR time
 
-  /**
-   * @brief deconstructor
-   */
-  ~PandarGeneral();
+    /**
+     * @brief deconstructor
+     */
+    ~PandarGeneral();
 
-  /**
-   * @brief load the lidar correction file
-   * @param contents The correction contents of lidar correction
-   */
-  int LoadCorrectionFile(std::string contents);
+    /**
+     * @brief load the lidar correction file
+     * @param contents The correction contents of lidar correction
+     */
+    int LoadCorrectionFile(std::string contents);
 
-  /**
-   * @brief Reset Lidar's start angle.
-   * @param angle The start angle
-   */
-  void ResetStartAngle(uint16_t start_angle);
+    /**
+     * @brief Reset Lidar's start angle.
+     * @param angle The start angle
+     */
+    void ResetStartAngle(uint16_t start_angle);
 
-  /**
-   * @brief Run SDK.
-   */
-  int Start();
+    /**
+     * @brief Run SDK.
+     */
+    int Start();
 
-  /**
-   * @brief Stop SDK.
-   */
-  void Stop();
+    /**
+     * @brief Stop SDK.
+     */
+    void Stop();
 
-  /** @brief get major version.
-  * @Return   ： major version
-   */
-  int getMajorVersion();
+    /** @brief get major version.
+     * @Return   ： major version
+     */
+    int getMajorVersion();
 
-  /**
-  * @brief get minor version.
-  * @Return   ： minor version
-  */
-  int getMinorVersion();
+    /**
+     * @brief get minor version.
+     * @Return   ： minor version
+     */
+    int getMinorVersion();
 
- private:
-  PandarGeneral_Internal *internal_;
+  private:
+    PandarGeneral_Internal *internal_;
 };
 
-#endif  // INCLUDE_PANDARGENERAL_H_
+#endif // INCLUDE_PANDARGENERAL_H_

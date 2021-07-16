@@ -15,8 +15,8 @@
  *****************************************************************************/
 
 #include "pandarGeneral.h"
-#include "pandarGeneral_internal.h"
 #include "log.h"
+#include "pandarGeneral_internal.h"
 /**
  * @brief Constructor
  * @param device_ip         The ip of the device
@@ -27,15 +27,34 @@
  *        start_angle       The start angle of every point cloud
  */
 PandarGeneral::PandarGeneral(
-    std::string device_ip, uint16_t lidar_port, uint16_t lidar_algorithm_port, uint16_t gps_port,
+    std::string device_ip,
+    uint16_t lidar_port,
+    uint16_t lidar_algorithm_port,
+    uint16_t gps_port,
     boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
-    boost::function<void(HS_Object3D_Object_List*)> algorithm_callback,
-    boost::function<void(double)> gps_callback, uint16_t start_angle, int tz,
-    int pcl_type, std::string lidar_type, std::string frame_id, std::string timestampType) {
-      // LOG_FUNC();
-  internal_ =
-      new PandarGeneral_Internal(device_ip, lidar_port, lidar_algorithm_port, gps_port, pcl_callback, algorithm_callback,
-                             gps_callback, start_angle, tz, pcl_type, lidar_type, frame_id, timestampType);
+    boost::function<void(HS_Object3D_Object_List *)> algorithm_callback,
+    boost::function<void(double)> gps_callback,
+    uint16_t start_angle,
+    int tz,
+    int pcl_type,
+    std::string lidar_type,
+    std::string frame_id,
+    std::string timestampType) {
+    // LOG_FUNC();
+    internal_ = new PandarGeneral_Internal(
+        device_ip,
+        lidar_port,
+        lidar_algorithm_port,
+        gps_port,
+        pcl_callback,
+        algorithm_callback,
+        gps_callback,
+        start_angle,
+        tz,
+        pcl_type,
+        lidar_type,
+        frame_id,
+        timestampType);
 }
 
 /**
@@ -47,11 +66,23 @@ PandarGeneral::PandarGeneral(
  *        frame_id          The frame id of point cloud
  */
 PandarGeneral::PandarGeneral(
-    std::string pcap_path, \
-    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,\
-    uint16_t start_angle, int tz, int pcl_type, std::string lidar_type, std::string frame_id, std::string timestampType) {
-  internal_ = new PandarGeneral_Internal(pcap_path, pcl_callback, start_angle, \
-      tz, pcl_type, lidar_type, frame_id, timestampType);
+    std::string pcap_path,
+    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+    uint16_t start_angle,
+    int tz,
+    int pcl_type,
+    std::string lidar_type,
+    std::string frame_id,
+    std::string timestampType) {
+    internal_ = new PandarGeneral_Internal(
+        pcap_path,
+        pcl_callback,
+        start_angle,
+        tz,
+        pcl_type,
+        lidar_type,
+        frame_id,
+        timestampType);
 }
 
 /**
@@ -64,7 +95,7 @@ PandarGeneral::~PandarGeneral() { delete internal_; }
  * @param contents The correction contents of lidar correction
  */
 int PandarGeneral::LoadCorrectionFile(std::string file) {
-  return internal_->LoadCorrectionFile(file);
+    return internal_->LoadCorrectionFile(file);
 }
 
 /**
@@ -72,7 +103,7 @@ int PandarGeneral::LoadCorrectionFile(std::string file) {
  * @param angle The start angle
  */
 void PandarGeneral::ResetStartAngle(uint16_t start_angle) {
-  internal_->ResetStartAngle(start_angle);
+    internal_->ResetStartAngle(start_angle);
 }
 
 /**
@@ -86,13 +117,13 @@ int PandarGeneral::Start() { return internal_->Start(); }
 void PandarGeneral::Stop() { internal_->Stop(); }
 
 int PandarGeneral::getMajorVersion() {
-  if (internal_) {
-    internal_->getMajorVersion();
-  }
+    if (internal_) {
+        internal_->getMajorVersion();
+    }
 }
 
 int PandarGeneral::getMinorVersion() {
-  if (internal_) {
-    internal_->getMinorVersion();
-  }
+    if (internal_) {
+        internal_->getMinorVersion();
+    }
 }
