@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
 set(CMAKE_VERBOSE_MAKEFILE true)
 
-find_package(PCL REQUIRED COMPONENTS common)
+find_package(PCL REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 add_subdirectory(src/PandarGeneralRaw)
@@ -30,5 +30,5 @@ add_executable(PandarGeneralTest test/test.cc)
 target_include_directories(
   PandarGeneralTest PRIVATE include src/PandarGeneralRaw/include
                             ${PCL_INCLUDE_DIRS})
-target_link_libraries(PandarGeneralTest ${PROJECT_NAME} ${PCL_IO_LIBRARIES}
+target_link_libraries(PandarGeneralTest ${PROJECT_NAME} ${PCL_LIBRARIES}
                       pthread)

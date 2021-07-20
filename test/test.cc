@@ -15,11 +15,21 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
+#include <pcl/visualization/cloud_viewer.h>
+
+pcl::visualization::CloudViewer viewer("Simple");
 
 void gpsCallback(int timestamp) { printf("gps: %d\n", timestamp); }
 
 void lidarCallback(std::shared_ptr<PPointCloud> cld, double timestamp) {
     printf("timestamp: %lf,point_size: %ld\n", timestamp, cld->points.size());
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    for (const auto &pt : cld->points) {
+        cloud->emplace_back(pt.x, pt.y, pt.z);
+    }
+
+    viewer.showCloud(cloud);
 }
 
 void lidarAlgorithmCallback(HS_Object3D_Object_List *object_t) {
