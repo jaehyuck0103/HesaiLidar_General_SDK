@@ -14,18 +14,16 @@
  * limitations under the License.
  *****************************************************************************/
 
-#ifndef INCLUDE_PANDAR40P_SDK_PANDAR40P_SDK_H_
-#define INCLUDE_PANDAR40P_SDK_PANDAR40P_SDK_H_
+#pragma once
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <thread>
 
 #include <string>
 #include <vector>
-
-#include <boost/function.hpp>
 
 #include "pandarGeneral/pandarGeneral.h"
 #include "pandarGeneral/point_types.h"
@@ -51,9 +49,9 @@ class PandarGeneralSDK {
         const uint16_t lidar_port,
         uint16_t lidar_algorithm_port,
         const uint16_t gps_port,
-        boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
-        boost::function<void(HS_Object3D_Object_List *)> algorithm_callback,
-        boost::function<void(double)> gps_callback,
+        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
+        std::function<void(double)> gps_callback,
         uint16_t start_angle,
         int tz,
         int pcl_type,
@@ -72,7 +70,7 @@ class PandarGeneralSDK {
      */
     PandarGeneralSDK(
         std::string pcap_path,
-        boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
         uint16_t start_angle,
         int tz,
         int pcl_type,
@@ -106,10 +104,8 @@ class PandarGeneralSDK {
   private:
     PandarGeneral *pandarGeneral_;
     void *tcp_command_client_;
-    boost::thread *get_calibration_thr_;
+    std::thread *get_calibration_thr_;
     bool enable_get_calibration_thr_;
     bool got_lidar_calibration_;
     std::string correction_content_;
 };
-
-#endif // INCLUDE_PANDAR40P_SDK_PANDAR40P_SDK_H_

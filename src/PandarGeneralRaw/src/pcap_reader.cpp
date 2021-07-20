@@ -48,14 +48,14 @@ void PcapReader::initTimeIndexMap() {
 }
 
 void PcapReader::start(
-    boost::function<void(const uint8_t *, const int, double timestamp)> callback) {
+    std::function<void(const uint8_t *, const int, double timestamp)> callback) {
     // LOG_FUNC();
     stop();
 
     this->callback = callback;
     loop = true;
 
-    parse_thr_ = new boost::thread(boost::bind(&PcapReader::parsePcap, this));
+    parse_thr_ = new std::thread(std::bind(&PcapReader::parsePcap, this));
 }
 
 void PcapReader::stop() {

@@ -31,9 +31,9 @@ PandarGeneral::PandarGeneral(
     uint16_t lidar_port,
     uint16_t lidar_algorithm_port,
     uint16_t gps_port,
-    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
-    boost::function<void(HS_Object3D_Object_List *)> algorithm_callback,
-    boost::function<void(double)> gps_callback,
+    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
+    std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
     int pcl_type,
@@ -67,7 +67,7 @@ PandarGeneral::PandarGeneral(
  */
 PandarGeneral::PandarGeneral(
     std::string pcap_path,
-    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
     uint16_t start_angle,
     int tz,
     int pcl_type,

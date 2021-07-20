@@ -27,9 +27,9 @@ PandarGeneralSDK::PandarGeneralSDK(
     const uint16_t lidar_port,
     uint16_t lidar_algorithm_port,
     uint16_t gps_port,
-    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
-    boost::function<void(HS_Object3D_Object_List *)> algorithm_callback,
-    boost::function<void(double)> gps_callback,
+    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
+    std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
     int pcl_type,
@@ -67,7 +67,7 @@ PandarGeneralSDK::PandarGeneralSDK(
 
 PandarGeneralSDK::PandarGeneralSDK(
     std::string pcap_path,
-    boost::function<void(boost::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
     uint16_t start_angle,
     int tz,
     int pcl_type,
@@ -130,7 +130,7 @@ int PandarGeneralSDK::Start() {
 
     enable_get_calibration_thr_ = true;
     get_calibration_thr_ =
-        new boost::thread(boost::bind(&PandarGeneralSDK::GetCalibrationFromDevice, this));
+        new std::thread(std::bind(&PandarGeneralSDK::GetCalibrationFromDevice, this));
 }
 
 void PandarGeneralSDK::Stop() {
