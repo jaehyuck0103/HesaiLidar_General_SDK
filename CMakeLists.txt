@@ -16,7 +16,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 add_subdirectory(src/PandarGeneralRaw)
 
 add_library(${PROJECT_NAME} SHARED src/pandarGeneral_sdk.cc
-                                   src/tcp_command_client.c src/util.c)
+                                   src/tcp_command_client.cpp src/util.cpp)
 
 target_include_directories(
   ${PROJECT_NAME} PRIVATE include src/PandarGeneralRaw/include

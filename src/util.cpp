@@ -37,10 +37,10 @@
 
 #define DEFAULT_TIMEOUT 10 /*secondes waitting for read/write*/
 
-int sys_readn(int fd, void *vptr, int n) {
+int sys_readn(int fd, unsigned char *vptr, int n) {
     // printf("start sys_readn: %d....\n", n);
     int nleft, nread;
-    char *ptr;
+    unsigned char *ptr;
 
     ptr = vptr;
     nleft = n;
@@ -63,10 +63,10 @@ int sys_readn(int fd, void *vptr, int n) {
     return n - nleft;
 }
 
-int sys_writen(int fd, const void *vptr, int n) {
+int sys_writen(int fd, const unsigned char *vptr, int n) {
     int nleft;
     int nwritten;
-    const char *ptr;
+    const unsigned char *ptr;
 
     ptr = vptr;
     nleft = n;
@@ -108,46 +108,8 @@ int tcp_open(const char *ipaddr, int port) {
     return sockfd;
 }
 
-/**
- *Description:check the socket  state
- *
- * @param
- * fd: socket
- * timeout:the time out of select
- * wait_for:socket state(r,w,conn)
- *
- * @return 1 if everything was ok, 0 otherwise
- */
-int select_fd(int fd, int timeout, int wait_for) {
-    fd_set fdset;
-    fd_set *rd = NULL, *wr = NULL;
-    struct timeval tmo;
-    int result;
-
-    FD_ZERO(&fdset);
-    FD_SET(fd, &fdset);
-    if (wait_for == WAIT_FOR_READ) {
-        rd = &fdset;
-    }
-    if (wait_for == WAIT_FOR_WRITE) {
-        wr = &fdset;
-    }
-    if (wait_for == WAIT_FOR_CONN) {
-        rd = &fdset;
-        wr = &fdset;
-    }
-
-    tmo.tv_sec = timeout;
-    tmo.tv_usec = 0;
-    do {
-        result = select(fd + 1, rd, wr, NULL, &tmo);
-    } while (result < 0 && errno == EINTR);
-
-    return result;
-}
 double getNowTimeSec() {
     struct timespec ts;
-    double time;
     if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
         return ts.tv_nsec / 1000000000.0 + ts.tv_sec;
     } else {

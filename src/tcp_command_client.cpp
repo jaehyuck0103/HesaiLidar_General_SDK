@@ -50,7 +50,7 @@ typedef struct TcpCommandClient_s {
 } TcpCommandClient;
 
 #ifdef DEBUG
-static void print_mem(char *mem, int len) {
+void print_mem(unsigned char *mem, int len) {
     int i = 0;
     for (int i = 0; i < len; ++i) {
         printf("%02x ", mem[i]);
@@ -58,10 +58,10 @@ static void print_mem(char *mem, int len) {
     printf("\n");
 }
 #else
-static void print_mem(char *mem, int len) {}
+void print_mem(unsigned char *mem, int len) {}
 #endif
 
-static int tcpCommandHeaderParser(unsigned char *buffer, int len, TcpCommandHeader *header) {
+int tcpCommandHeaderParser(unsigned char *buffer, TcpCommandHeader *header) {
     printf("tcpCommandHeaderParser\n");
     int index = 0;
     header->cmd = buffer[index++];
@@ -71,7 +71,7 @@ static int tcpCommandHeaderParser(unsigned char *buffer, int len, TcpCommandHead
     return 0;
 }
 
-static int tcpCommandReadCommand(int connfd, TC_Command *cmd) {
+int tcpCommandReadCommand(int connfd, TC_Command *cmd) {
     printf("tcpCommandReadCommand\n");
     int ret = 0;
     if (!cmd) {
@@ -93,19 +93,19 @@ static int tcpCommandReadCommand(int connfd, TC_Command *cmd) {
 
     print_mem(buffer, 8);
 
-    tcpCommandHeaderParser(buffer + 2, 6, &cmd->header);
+    tcpCommandHeaderParser(buffer + 2, &cmd->header);
 
     if (cmd->header.len > 0) {
-        cmd->data = malloc(cmd->header.len);
+        cmd->data = new unsigned char[cmd->header.len];
         if (!cmd->data) {
-            printf("malloc data error\n");
+            printf("new data error\n");
             return -1;
         }
     }
 
     ret = sys_readn(connfd, cmd->data, cmd->header.len);
     if (ret != cmd->header.len) {
-        free(cmd->data);
+        delete[] cmd->data;
         printf("Server Read failed\n");
         return -1;
     }
@@ -117,7 +117,7 @@ static int tcpCommandReadCommand(int connfd, TC_Command *cmd) {
     return 0;
 }
 
-static int TcpCommand_buildHeader(char *buffer, TC_Command *cmd) {
+int TcpCommand_buildHeader(unsigned char *buffer, TC_Command *cmd) {
     printf("TcpCommand_buildHeader\n");
     if (!buffer) {
         return -1;
@@ -135,7 +135,7 @@ static int TcpCommand_buildHeader(char *buffer, TC_Command *cmd) {
     return index;
 }
 
-static PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command *cmd) {
+PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command *cmd) {
     printf("tcpCommandClient_SendCmd\n");
     if (!client && !cmd) {
         printf("Bad Parameter\n");
@@ -205,7 +205,7 @@ void *TcpCommandClientNew(const char *ip, const unsigned short port) {
         return NULL;
     }
 
-    TcpCommandClient *client = (TcpCommandClient *)malloc(sizeof(TcpCommandClient));
+    TcpCommandClient *client = new TcpCommandClient[sizeof(TcpCommandClient)];
     if (!client) {
         printf("No Memory!!!\n");
         return NULL;
@@ -233,21 +233,21 @@ PTC_ErrCode TcpCommandSetCalibration(const void *handle, const char *buffer, uns
     memset(&cmd, 0, sizeof(TC_Command));
     cmd.header.cmd = PTC_COMMAND_SET_CALIBRATION;
     cmd.header.len = len;
-    cmd.data = strdup(buffer);
+    cmd.data = (unsigned char *)(strdup(buffer));
 
     PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
     if (errorCode != PTC_ERROR_NO_ERROR) {
-        free(cmd.data);
+        delete[] cmd.data;
         return errorCode;
     }
-    free(cmd.data);
+    delete[] cmd.data;
 
     if (cmd.ret_data) {
         // useless data;
-        free(cmd.ret_data);
+        delete[] cmd.ret_data;
     }
 
-    return cmd.header.ret_code;
+    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
 }
 
 PTC_ErrCode TcpCommandGetCalibration(const void *handle, char **buffer, unsigned int *len) {
@@ -269,16 +269,16 @@ PTC_ErrCode TcpCommandGetCalibration(const void *handle, char **buffer, unsigned
         return errorCode;
     }
 
-    char *ret_str = (char *)malloc(cmd.ret_size + 1);
+    char *ret_str = new char[cmd.ret_size + 1];
     memcpy(ret_str, cmd.ret_data, cmd.ret_size);
     ret_str[cmd.ret_size] = '\0';
 
-    free(cmd.ret_data);
+    delete[] cmd.ret_data;
 
     *buffer = ret_str;
     *len = cmd.ret_size + 1;
 
-    return cmd.header.ret_code;
+    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
 }
 PTC_ErrCode TcpCommandGetLidarCalibration(const void *handle, char **buffer, unsigned int *len) {
     printf("buffer is: %s,len is: %d\n", buffer, len);
@@ -299,16 +299,16 @@ PTC_ErrCode TcpCommandGetLidarCalibration(const void *handle, char **buffer, uns
         return errorCode;
     }
 
-    char *ret_str = (char *)malloc(cmd.ret_size + 1);
+    char *ret_str = new char[cmd.ret_size + 1];
     memcpy(ret_str, cmd.ret_data, cmd.ret_size);
     ret_str[cmd.ret_size] = '\0';
 
-    free(cmd.ret_data);
+    delete[] cmd.ret_data;
 
     *buffer = ret_str;
     *len = cmd.ret_size + 1;
 
-    return cmd.header.ret_code;
+    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
 }
 
 PTC_ErrCode TcpCommandResetCalibration(const void *handle) {
@@ -332,10 +332,8 @@ PTC_ErrCode TcpCommandResetCalibration(const void *handle) {
 
     if (cmd.ret_data) {
         // useless data;
-        free(cmd.ret_data);
+        delete[] cmd.ret_data;
     }
 
-    return cmd.header.ret_code;
+    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
 }
-
-void TcpCommandClientDestroy(const void *handle) {}

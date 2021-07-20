@@ -171,7 +171,7 @@ void PandarGeneralSDK::GetCalibrationFromDevice() {
                         std::cout << "Parse Lidar Correction Success!!!" << std::endl;
                     }
                 }
-                free(buffer);
+                delete[] buffer;
             }
         }
 
