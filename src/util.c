@@ -33,7 +33,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include "src/util.h"
+#include "util.h"
 
 #define DEFAULT_TIMEOUT 10 /*secondes waitting for read/write*/
 

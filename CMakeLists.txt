@@ -1,44 +1,40 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.15)
 project(PandarGeneralSDK)
 
-find_package( Boost REQUIRED )
-find_package( PCL REQUIRED COMPONENTS common )
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set (CMAKE_CXX_FLAGS "-fPIC --std=c++11")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
+set(CMAKE_VERBOSE_MAKEFILE true)
+
+find_package(Boost REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 add_subdirectory(src/PandarGeneralRaw)
 
-include_directories(
-    .
-    include
-    src/PandarGeneralRaw/include
-    ${Boost_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
-)
+add_library(${PROJECT_NAME} SHARED src/pandarGeneral_sdk.cc
+                                   src/tcp_command_client.c src/util.c)
 
-add_library( ${PROJECT_NAME} SHARED
-    src/pandarGeneral_sdk.cc
-    src/tcp_command_client.c
-    src/util.c
-)
+target_include_directories(
+  ${PROJECT_NAME} PRIVATE include src/PandarGeneralRaw/include
+                          ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
-target_link_libraries(${PROJECT_NAME} 
-    PandarGeneral
-    ${Boost_LIBRARIES}
-    ${PCL_IO_LIBRARIES}
-    pcap
-)
+target_link_libraries(
+  ${PROJECT_NAME}
+  PandarGeneral
+  ${Boost_LIBRARIES}
+  ${PCL_IO_LIBRARIES}
+  pcap
+  Eigen3::Eigen
+  boost_thread)
 
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    find_package(PCL REQUIRED)
-    add_executable(PandarGeneralTest
-        test/test.cc
-    )
+add_executable(PandarGeneralTest test/test.cc)
 
-    target_link_libraries(PandarGeneralTest
-        ${PROJECT_NAME}
-        ${Boost_LIBRARIES}
-        ${PCL_IO_LIBRARIES}
-    )
-endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-
+target_include_directories(
+  PandarGeneralTest PRIVATE include src/PandarGeneralRaw/include
+                            ${PCL_INCLUDE_DIRS})
+target_link_libraries(PandarGeneralTest ${PROJECT_NAME} ${PCL_IO_LIBRARIES})

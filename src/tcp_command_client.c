@@ -14,8 +14,8 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include "src/tcp_command_client.h"
-#include "src/util.h"
+#include "tcp_command_client.h"
+#include "util.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>

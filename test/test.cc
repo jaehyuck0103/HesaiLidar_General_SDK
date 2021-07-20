@@ -26,14 +26,15 @@ void lidarAlgorithmCallback(HS_Object3D_Object_List *object_t) {
     HS_Object3D_Object *object;
     printf("----------------------\n");
     printf("total objects: %d\n", object_t->valid_size);
-    for (size_t i = 0; i < object_t->valid_size; i++) {
+    for (int i = 0; i < object_t->valid_size; i++) {
         object = &object_t->data[i];
         printf("id: %u, type: %u\n", object->data.id, object->type);
     }
     printf("----------------------\n");
 }
 
-int main(int argc, char **argv) {
+int main() {
+    /*
     PandarGeneralSDK pandarGeneral(
         std::string("192.168.1.201"),
         2368,
@@ -48,17 +49,18 @@ int main(int argc, char **argv) {
         std::string("PandarXT-32"),
         std::string("frame_id"),
         "");
+    */
 
-    /*
     PandarGeneralSDK pandarGeneral(
-        std::string("" / path / to / pcapFile ""),
+        std::string("../test/Turning_Left_Pandar64.pcap"),
         lidarCallback,
         0,
         0,
         1,
-        std::string("PandarXT-16"),
+        std::string("Pandar64"),
+        std::string("frame_id"),
         "");
-    std::string filePath = "/path/to/correctionFile";
+    std::string filePath = "../test/angle_correction_Pandar64.csv";
     std::ifstream fin(filePath);
     int length = 0;
     std::string strlidarCalibration;
@@ -70,7 +72,6 @@ int main(int argc, char **argv) {
     fin.close();
     strlidarCalibration = buffer;
     pandarGeneral.LoadLidarCorrectionFile(strlidarCalibration);
-    */
 
     pandarGeneral.Start();
 
