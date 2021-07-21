@@ -11,7 +11,7 @@ find_package(PCL REQUIRED COMPONENTS common)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 add_library(${PROJECT_NAME} src/input.cc src/pandarGeneral_internal.cc
-                            src/pandarGeneral.cc src/pcap_reader.cpp)
+                            src/pcap_reader.cpp)
 target_include_directories(
   ${PROJECT_NAME} PRIVATE . include include/pandarGeneral ${PCL_INCLUDE_DIRS})
 

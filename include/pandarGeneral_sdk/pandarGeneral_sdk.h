@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "pandarGeneral/pandarGeneral.h"
+#include "pandarGeneral/pandarGeneral_internal.h"
 #include "pandarGeneral/point_types.h"
 
 #include <functional>
@@ -81,7 +81,7 @@ class PandarGeneralSDK {
     int getMinorVersion();
 
   private:
-    std::unique_ptr<PandarGeneral> pandarGeneral_;
+    std::unique_ptr<PandarGeneral_Internal> internal_;
     std::string correction_content_;
     bool getCalibrationFromDevice(const std::string &device_ip);
 };

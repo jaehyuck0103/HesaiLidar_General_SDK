@@ -36,7 +36,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string frame_id,
     std::string timestampType) {
 
-    pandarGeneral_ = std::make_unique<PandarGeneral>(
+    internal_ = std::make_unique<PandarGeneral_Internal>(
         device_ip,
         lidar_port,
         lidar_algorithm_port,
@@ -70,7 +70,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string frame_id,
     std::string timestampType) {
 
-    pandarGeneral_ = std::make_unique<PandarGeneral>(
+    internal_ = std::make_unique<PandarGeneral_Internal>(
         pcap_path,
         pcl_callback,
         start_angle,
@@ -84,23 +84,23 @@ PandarGeneralSDK::PandarGeneralSDK(
 PandarGeneralSDK::~PandarGeneralSDK() { Stop(); }
 
 int PandarGeneralSDK::LoadLidarCorrectionFile(std::string file) {
-    return pandarGeneral_->LoadCorrectionFile(file);
+    return internal_->LoadCorrectionFile(file);
 }
 
 void PandarGeneralSDK::ResetLidarStartAngle(uint16_t start_angle) {
-    pandarGeneral_->ResetStartAngle(start_angle);
+    internal_->ResetStartAngle(start_angle);
 }
 
 std::string PandarGeneralSDK::GetLidarCalibration() { return correction_content_; }
 
 void PandarGeneralSDK::Start() {
     Stop();
-    pandarGeneral_->Start();
+    internal_->Start();
 }
-void PandarGeneralSDK::Stop() { pandarGeneral_->Stop(); }
+void PandarGeneralSDK::Stop() { internal_->Stop(); }
 
-int PandarGeneralSDK::getMajorVersion() { return pandarGeneral_->getMajorVersion(); }
-int PandarGeneralSDK::getMinorVersion() { return pandarGeneral_->getMinorVersion(); }
+int PandarGeneralSDK::getMajorVersion() { return internal_->getMajorVersion(); }
+int PandarGeneralSDK::getMinorVersion() { return internal_->getMinorVersion(); }
 
 bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
 
@@ -120,7 +120,7 @@ bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
         return false;
     }
 
-    int ret = pandarGeneral_->LoadCorrectionFile(correction_content);
+    int ret = internal_->LoadCorrectionFile(correction_content);
     if (ret != 0) {
         std::cout << "Fail to parse lidar correction\n";
         return false;
