@@ -15,39 +15,40 @@
  *****************************************************************************/
 #pragma once
 
-enum PTC_COMMAND {
-    PTC_COMMAND_GET_CALIBRATION = 0,
-    PTC_COMMAND_SET_CALIBRATION,
-    PTC_COMMAND_HEARTBEAT,
-    PTC_COMMAND_RESET_CALIBRATION,
-    PTC_COMMAND_TEST,
-    PTC_COMMAND_GET_LIDAR_CALIBRATION,
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace TcpCommand {
+
+enum class PTC_Command : uint8_t {
+    GET_CALIBRATION = 0,
+    SET_CALIBRATION,
+    HEARTBEAT,
+    RESET_CALIBRATION,
+    TEST,
+    GET_LIDAR_CALIBRATION,
 };
 
-enum PTC_ErrCode {
-    PTC_ERROR_NO_ERROR = 0,
-    PTC_ERROR_BAD_PARAMETER,
-    PTC_ERROR_CONNECT_SERVER_FAILED,
-    PTC_ERROR_TRANSFER_FAILED,
-    PTC_ERROR_NO_MEMORY,
-};
-
-struct TcpCommandHeader {
-    unsigned char cmd;
-    unsigned char ret_code;
-    unsigned int len;
+enum class PTC_ErrCode : uint8_t {
+    NO_ERROR = 0,
+    BAD_PARAMETER,
+    CONNECT_SERVER_FAILED,
+    TRANSFER_FAILED,
+    NO_MEMORY,
+    INVALID_RETURN_CODE, // custom add
 };
 
 struct TC_Command {
-    TcpCommandHeader header;
-    unsigned char *data;
-
-    unsigned char *ret_data;
-    unsigned int ret_size;
+    uint8_t cmd;
+    uint8_t ret_code;
+    std::vector<uint8_t> payload;
 };
 
-void *TcpCommandClientNew(const char *ip, const unsigned short port);
-PTC_ErrCode TcpCommandSetCalibration(const void *handle, const char *buffer, unsigned int len);
-PTC_ErrCode TcpCommandGetCalibration(const void *handle, char **buffer, unsigned int *len);
-PTC_ErrCode TcpCommandGetLidarCalibration(const void *handle, char **buffer, unsigned int *len);
-PTC_ErrCode TcpCommandResetCalibration(const void *handle);
+std::pair<PTC_ErrCode, TC_Command>
+setCalibration(std::string device_ip, int device_port, std::vector<uint8_t> payload);
+std::pair<PTC_ErrCode, TC_Command> getCalibration(std::string device_ip, int device_port);
+std::pair<PTC_ErrCode, TC_Command> getLidarCalibration(std::string device_ip, int device_port);
+std::pair<PTC_ErrCode, TC_Command> resetCalibration(std::string device_ip, int device_port);
+
+} // namespace TcpCommand

@@ -671,7 +671,6 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
 
 void PandarGeneral_Internal::ProcessLiarPacket() {
     // LOG_FUNC();
-    double lastTimestamp = 0.0f;
     struct timespec ts;
     int ret = 0;
 

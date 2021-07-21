@@ -16,324 +16,145 @@
 
 #include "tcp_command_client.h"
 #include "util.h"
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <linux/sockios.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <setjmp.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <syslog.h>
+#include <array>
+#include <iomanip>
+#include <iostream>
 #include <unistd.h>
 
-typedef struct TcpCommandClient_s {
-    pthread_mutex_t lock;
-    pthread_t tid;
+namespace TcpCommand {
 
-    int exit;
-
-    char ip[256];
-    unsigned short port;
-
-    int fd;
-} TcpCommandClient;
-
+void print_mem(std::vector<uint8_t> mem) {
 #ifdef DEBUG
-void print_mem(unsigned char *mem, int len) {
-    int i = 0;
-    for (int i = 0; i < len; ++i) {
-        printf("%02x ", mem[i]);
+    for (uint8_t elem : mem) {
+        std::cout << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem)
+                  << " ";
     }
-    printf("\n");
-}
+    std::cout << "\n";
 #else
-void print_mem(unsigned char *mem, int len) {}
 #endif
-
-int tcpCommandHeaderParser(unsigned char *buffer, TcpCommandHeader *header) {
-    printf("tcpCommandHeaderParser\n");
-    int index = 0;
-    header->cmd = buffer[index++];
-    header->ret_code = buffer[index++];
-    header->len = ((buffer[index] & 0xff) << 24) | ((buffer[index + 1] & 0xff) << 16) |
-                  ((buffer[index + 2] & 0xff) << 8) | ((buffer[index + 3] & 0xff) << 0);
-    return 0;
 }
 
-int tcpCommandReadCommand(int connfd, TC_Command *cmd) {
-    printf("tcpCommandReadCommand\n");
-    int ret = 0;
-    if (!cmd) {
-        return -1;
-    }
-    memset(cmd, 0, sizeof(TC_Command));
-    unsigned char buffer[1500];
-    ret = sys_readn(connfd, buffer, 2);
-    if (ret <= 0 || buffer[0] != 0x47 || buffer[1] != 0x74) {
-        printf("Server Read failed\n");
-        return -1;
+std::pair<PTC_ErrCode, TC_Command> readCommand(int connfd) {
+    std::cout << "tcpCommandReadCommand\n";
+
+    std::array<uint8_t, 2> buffer1;
+    if (int ret = sys_readn(connfd, buffer1.data(), buffer1.size());
+        ret != buffer1.size() || buffer1.at(0) != 0x47 || buffer1.at(1) != 0x74) {
+        std::cout << "Receive feedback failed!!!\n";
+        return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
 
-    ret = sys_readn(connfd, buffer + 2, 6);
-    if (ret != 6) {
-        printf("Server Read failed\n");
-        return -1;
+    std::array<uint8_t, 6> buffer2;
+    if (int ret = sys_readn(connfd, buffer2.data(), buffer2.size()); ret != buffer2.size()) {
+        std::cout << "Receive feedback failed!!!\n";
+        return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
 
-    print_mem(buffer, 8);
+    // Parsing
+    TC_Command feedback;
+    feedback.cmd = buffer2.at(0);
+    feedback.ret_code = buffer2.at(1);
+    if (feedback.ret_code != 0) {
+        std::cout << "Invalid return code\n";
+        return {PTC_ErrCode::TRANSFER_FAILED, {}};
+    }
 
-    tcpCommandHeaderParser(buffer + 2, &cmd->header);
-
-    if (cmd->header.len > 0) {
-        cmd->data = new unsigned char[cmd->header.len];
-        if (!cmd->data) {
-            printf("new data error\n");
-            return -1;
+    uint32_t len_payload = ((buffer2.at(2) & 0xff) << 24) | ((buffer2.at(3) & 0xff) << 16) |
+                           ((buffer2.at(4) & 0xff) << 8) | ((buffer2.at(5) & 0xff) << 0);
+    if (len_payload > 0) {
+        feedback.payload.resize(len_payload);
+        int ret = sys_readn(connfd, feedback.payload.data(), len_payload);
+        if (ret != static_cast<int>(len_payload)) {
+            std::cout << "Receive payload failed!!!\n";
+            return {PTC_ErrCode::TRANSFER_FAILED, {}};
         }
     }
 
-    ret = sys_readn(connfd, cmd->data, cmd->header.len);
-    if (ret != cmd->header.len) {
-        delete[] cmd->data;
-        printf("Server Read failed\n");
-        return -1;
-    }
+    print_mem(feedback.payload);
 
-    // cmd->ret_size = cmd->header.len;
-
-    print_mem(cmd->data, cmd->header.len);
-
-    return 0;
+    return {PTC_ErrCode::NO_ERROR, feedback};
 }
 
-int TcpCommand_buildHeader(unsigned char *buffer, TC_Command *cmd) {
-    printf("TcpCommand_buildHeader\n");
-    if (!buffer) {
-        return -1;
-    }
-    int index = 0;
-    buffer[index++] = 0x47;
-    buffer[index++] = 0x74;
-    buffer[index++] = cmd->header.cmd;
-    buffer[index++] = cmd->header.ret_code; // color or mono
-    buffer[index++] = (cmd->header.len >> 24) & 0xff;
-    buffer[index++] = (cmd->header.len >> 16) & 0xff;
-    buffer[index++] = (cmd->header.len >> 8) & 0xff;
-    buffer[index++] = (cmd->header.len >> 0) & 0xff;
-
-    return index;
+std::vector<uint8_t> buildHeader(const TC_Command &cmd) {
+    std::cout << "TcpCommand_buildHeader\n";
+    return {
+        0x47,
+        0x74,
+        cmd.cmd,
+        cmd.ret_code,
+        static_cast<uint8_t>((cmd.payload.size() >> 24) & 0xff),
+        static_cast<uint8_t>((cmd.payload.size() >> 16) & 0xff),
+        static_cast<uint8_t>((cmd.payload.size() >> 8) & 0xff),
+        static_cast<uint8_t>((cmd.payload.size() >> 0) & 0xff)};
 }
 
-PTC_ErrCode tcpCommandClient_SendCmd(TcpCommandClient *client, TC_Command *cmd) {
-    printf("tcpCommandClient_SendCmd\n");
-    if (!client && !cmd) {
-        printf("Bad Parameter\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
+std::pair<PTC_ErrCode, TC_Command>
+sendCmd(std::string device_ip, int device_port, const TC_Command &cmd) {
+    std::cout << "tcpCommandClient_SendCmd\n";
 
-    if (cmd->header.len != 0 && cmd->data == NULL) {
-        printf("Bad Parameter : payload is null\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
-
-    pthread_mutex_lock(&client->lock);
-    int fd = tcp_open(client->ip, client->port);
+    int fd = tcp_open(device_ip.c_str(), device_port);
     if (fd < 0) {
-        pthread_mutex_unlock(&client->lock);
-        return PTC_ERROR_CONNECT_SERVER_FAILED;
+        return {PTC_ErrCode::CONNECT_SERVER_FAILED, {}};
     }
 
-    unsigned char buffer[128];
-    int size = TcpCommand_buildHeader(buffer, cmd);
-
-    print_mem(buffer, size);
-    int ret = write(fd, buffer, size);
-    if (ret != size) {
+    // Send Command
+    std::vector<uint8_t> buffer = buildHeader(cmd);
+    print_mem(buffer);
+    int ret = write(fd, buffer.data(), buffer.size());
+    if (ret != static_cast<int>(buffer.size())) {
+        std::cout << "Write header error\n";
         close(fd);
-        pthread_mutex_unlock(&client->lock);
-        printf("Write header error\n");
-        return PTC_ERROR_TRANSFER_FAILED;
+        return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
 
-    if (cmd->header.len > 0 && cmd->data) {
-        print_mem(cmd->data, cmd->header.len);
-        ret = write(fd, cmd->data, cmd->header.len);
-        if (ret != cmd->header.len) {
-            printf("Write Payload error\n");
+    if (!cmd.payload.empty()) {
+        print_mem(cmd.payload);
+        ret = write(fd, cmd.payload.data(), cmd.payload.size());
+        if (ret != static_cast<int>(cmd.payload.size())) {
+            std::cout << "Write Payload error\n";
             close(fd);
-            pthread_mutex_unlock(&client->lock);
-            return PTC_ERROR_TRANSFER_FAILED;
+            return {PTC_ErrCode::TRANSFER_FAILED, {}};
         }
     }
 
-    TC_Command feedBack;
-    ret = tcpCommandReadCommand(fd, &feedBack);
-    if (ret != 0) {
-        printf("Receive feed back failed!!!\n");
-        close(fd);
-        pthread_mutex_unlock(&client->lock);
-        return PTC_ERROR_TRANSFER_FAILED;
-    }
-    // printf("feed back : %d %d %d \n", feedBack.header.len ,
-    // cmd->header.ret_code,
-    //        cmd->header.cmd);
-
-    cmd->ret_data = feedBack.data;
-    cmd->ret_size = feedBack.header.len;
-    cmd->header.ret_code = feedBack.header.ret_code;
-
+    // Receive Feedback
+    auto ret2 = readCommand(fd);
     close(fd);
-    pthread_mutex_unlock(&client->lock);
-    return PTC_ERROR_NO_ERROR;
+    return ret2;
 }
 
-void *TcpCommandClientNew(const char *ip, const unsigned short port) {
-    printf("TcpCommandClientNew\n");
-    if (!ip) {
-        printf("Bad Parameter\n");
-        return NULL;
-    }
-
-    TcpCommandClient *client = new TcpCommandClient[sizeof(TcpCommandClient)];
-    if (!client) {
-        printf("No Memory!!!\n");
-        return NULL;
-    }
-    memset(client, 0, sizeof(TcpCommandClient));
-    client->fd = -1;
-    strncpy(client->ip, ip, strlen(ip));
-    client->port = port;
-
-    pthread_mutex_init(&client->lock, NULL);
-
-    printf("TCP Command Client Init Success!!!\n");
-    return (void *)client;
-}
-
-PTC_ErrCode TcpCommandSetCalibration(const void *handle, const char *buffer, unsigned int len) {
-    printf("buffer is: %s,len is: %d\n", buffer, len);
-    if (!handle || !buffer || len <= 0) {
-        printf("Bad Parameter!!!\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
-    TcpCommandClient *client = (TcpCommandClient *)handle;
+std::pair<PTC_ErrCode, TC_Command>
+setCalibration(std::string device_ip, int device_port, std::vector<uint8_t> payload) {
 
     TC_Command cmd;
-    memset(&cmd, 0, sizeof(TC_Command));
-    cmd.header.cmd = PTC_COMMAND_SET_CALIBRATION;
-    cmd.header.len = len;
-    cmd.data = (unsigned char *)(strdup(buffer));
+    cmd.cmd = static_cast<uint8_t>(PTC_Command::SET_CALIBRATION);
+    cmd.payload = payload;
 
-    PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
-    if (errorCode != PTC_ERROR_NO_ERROR) {
-        delete[] cmd.data;
-        return errorCode;
-    }
-    delete[] cmd.data;
-
-    if (cmd.ret_data) {
-        // useless data;
-        delete[] cmd.ret_data;
-    }
-
-    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
+    return sendCmd(device_ip, device_port, cmd);
 }
 
-PTC_ErrCode TcpCommandGetCalibration(const void *handle, char **buffer, unsigned int *len) {
-    printf("buffer is: %s,len is: %d\n", buffer, len);
-    if (!handle || !buffer || !len) {
-        printf("Bad Parameter!!!\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
-    TcpCommandClient *client = (TcpCommandClient *)handle;
+std::pair<PTC_ErrCode, TC_Command> getCalibration(std::string device_ip, int device_port) {
 
     TC_Command cmd;
-    memset(&cmd, 0, sizeof(TC_Command));
-    cmd.header.cmd = PTC_COMMAND_GET_CALIBRATION;
-    cmd.header.len = 0;
-    cmd.data = NULL;
+    cmd.cmd = static_cast<uint8_t>(PTC_Command::GET_CALIBRATION);
 
-    PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
-    if (errorCode != PTC_ERROR_NO_ERROR) {
-        return errorCode;
-    }
-
-    char *ret_str = new char[cmd.ret_size + 1];
-    memcpy(ret_str, cmd.ret_data, cmd.ret_size);
-    ret_str[cmd.ret_size] = '\0';
-
-    delete[] cmd.ret_data;
-
-    *buffer = ret_str;
-    *len = cmd.ret_size + 1;
-
-    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
+    return sendCmd(device_ip, device_port, cmd);
 }
-PTC_ErrCode TcpCommandGetLidarCalibration(const void *handle, char **buffer, unsigned int *len) {
-    printf("buffer is: %s,len is: %d\n", buffer, len);
-    if (!handle || !buffer || !len) {
-        printf("Bad Parameter!!!\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
-    TcpCommandClient *client = (TcpCommandClient *)handle;
+
+std::pair<PTC_ErrCode, TC_Command> getLidarCalibration(std::string device_ip, int device_port) {
 
     TC_Command cmd;
-    memset(&cmd, 0, sizeof(TC_Command));
-    cmd.header.cmd = PTC_COMMAND_GET_LIDAR_CALIBRATION;
-    cmd.header.len = 0;
-    cmd.data = NULL;
+    cmd.cmd = static_cast<uint8_t>(PTC_Command::GET_LIDAR_CALIBRATION);
 
-    PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
-    if (errorCode != PTC_ERROR_NO_ERROR) {
-        return errorCode;
-    }
-
-    char *ret_str = new char[cmd.ret_size + 1];
-    memcpy(ret_str, cmd.ret_data, cmd.ret_size);
-    ret_str[cmd.ret_size] = '\0';
-
-    delete[] cmd.ret_data;
-
-    *buffer = ret_str;
-    *len = cmd.ret_size + 1;
-
-    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
+    return sendCmd(device_ip, device_port, cmd);
 }
 
-PTC_ErrCode TcpCommandResetCalibration(const void *handle) {
-    printf("TcpCommandResetCalibration\n");
-    if (!handle) {
-        printf("Bad Parameter!!!\n");
-        return PTC_ERROR_BAD_PARAMETER;
-    }
-    TcpCommandClient *client = (TcpCommandClient *)handle;
+std::pair<PTC_ErrCode, TC_Command> resetCalibration(std::string device_ip, int device_port) {
 
     TC_Command cmd;
-    memset(&cmd, 0, sizeof(TC_Command));
-    cmd.header.cmd = PTC_COMMAND_RESET_CALIBRATION;
-    cmd.header.len = 0;
-    cmd.data = NULL;
+    cmd.cmd = static_cast<uint8_t>(PTC_Command::RESET_CALIBRATION);
 
-    PTC_ErrCode errorCode = tcpCommandClient_SendCmd(client, &cmd);
-    if (errorCode != PTC_ERROR_NO_ERROR) {
-        return errorCode;
-    }
-
-    if (cmd.ret_data) {
-        // useless data;
-        delete[] cmd.ret_data;
-    }
-
-    return static_cast<PTC_ErrCode>(cmd.header.ret_code);
+    return sendCmd(device_ip, device_port, cmd);
 }
+
+} // namespace TcpCommand

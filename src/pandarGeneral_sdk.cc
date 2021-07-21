@@ -20,7 +20,7 @@
 #include "version.h"
 #include "yaml-cpp/yaml.h"
 
-#define PANDARGENERALSDK_TCP_COMMAND_PORT (9347)
+constexpr int PANDAR_GENERALSDK_TCP_COMMAND_PORT = 9347;
 
 PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
@@ -36,9 +36,9 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
+
     printVersion();
     pandarGeneral_ = NULL;
-    // LOG_FUNC();
 
     pandarGeneral_ = new PandarGeneral(
         device_ip,
@@ -55,14 +55,10 @@ PandarGeneralSDK::PandarGeneralSDK(
         frame_id,
         timestampType);
 
-    tcp_command_client_ =
-        TcpCommandClientNew(device_ip.c_str(), PANDARGENERALSDK_TCP_COMMAND_PORT);
-    if (!tcp_command_client_) {
-        std::cout << "Init TCP Command Client Failed" << std::endl;
-    }
     get_calibration_thr_ = NULL;
     enable_get_calibration_thr_ = false;
     got_lidar_calibration_ = false;
+    device_ip_ = device_ip;
 }
 
 PandarGeneralSDK::PandarGeneralSDK(
@@ -88,7 +84,6 @@ PandarGeneralSDK::PandarGeneralSDK(
         timestampType);
 
     get_calibration_thr_ = NULL;
-    tcp_command_client_ = NULL;
     enable_get_calibration_thr_ = false;
     got_lidar_calibration_ = false;
 }
@@ -145,33 +140,29 @@ void PandarGeneralSDK::Stop() {
 
 void PandarGeneralSDK::GetCalibrationFromDevice() {
     // LOG_FUNC();
-    if (!tcp_command_client_) {
+    if (device_ip_.empty()) {
         return;
     }
-
-    int32_t ret = 0;
 
     while (enable_get_calibration_thr_ && !got_lidar_calibration_) {
         if (!got_lidar_calibration_) {
             // get lidar calibration.
-            char *buffer = NULL;
-            uint32_t len = 0;
-
-            ret = TcpCommandGetLidarCalibration(tcp_command_client_, &buffer, &len);
-            if (ret == 0 && buffer) {
+            auto [ec, feedback] =
+                TcpCommand::getLidarCalibration(device_ip_, PANDAR_GENERALSDK_TCP_COMMAND_PORT);
+            if (ec == TcpCommand::PTC_ErrCode::NO_ERROR) {
                 // success;
-                got_lidar_calibration_ = true;
-                correction_content_ = std::string(buffer);
+                std::string correction_content(feedback.payload.begin(), feedback.payload.end());
                 if (pandarGeneral_) {
-                    ret = pandarGeneral_->LoadCorrectionFile(correction_content_);
+                    int ret = pandarGeneral_->LoadCorrectionFile(correction_content);
                     if (ret != 0) {
                         std::cout << "Parse Lidar Correction Error" << std::endl;
                         got_lidar_calibration_ = false;
                     } else {
                         std::cout << "Parse Lidar Correction Success!!!" << std::endl;
+                        correction_content_ = correction_content;
+                        got_lidar_calibration_ = true;
                     }
                 }
-                delete[] buffer;
             }
         }
 

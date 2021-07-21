@@ -103,9 +103,9 @@ class PandarGeneralSDK {
 
   private:
     PandarGeneral *pandarGeneral_;
-    void *tcp_command_client_;
     std::thread *get_calibration_thr_;
     bool enable_get_calibration_thr_;
     bool got_lidar_calibration_;
     std::string correction_content_;
+    std::string device_ip_;
 };
