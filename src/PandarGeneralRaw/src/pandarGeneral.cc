@@ -94,8 +94,8 @@ PandarGeneral::~PandarGeneral() { delete internal_; }
  * @brief load the lidar correction file
  * @param contents The correction contents of lidar correction
  */
-int PandarGeneral::LoadCorrectionFile(std::string file) {
-    return internal_->LoadCorrectionFile(file);
+int PandarGeneral::LoadCorrectionFile(std::string correction_content) {
+    return internal_->LoadCorrectionFile(correction_content);
 }
 
 /**
@@ -116,14 +116,6 @@ int PandarGeneral::Start() { return internal_->Start(); }
  */
 void PandarGeneral::Stop() { internal_->Stop(); }
 
-int PandarGeneral::getMajorVersion() {
-    if (internal_) {
-        internal_->getMajorVersion();
-    }
-}
+int PandarGeneral::getMajorVersion() { return internal_->getMajorVersion(); }
 
-int PandarGeneral::getMinorVersion() {
-    if (internal_) {
-        internal_->getMinorVersion();
-    }
-}
+int PandarGeneral::getMinorVersion() { return internal_->getMinorVersion(); }

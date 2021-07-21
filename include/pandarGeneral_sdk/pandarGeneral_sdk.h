@@ -16,19 +16,11 @@
 
 #pragma once
 
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <thread>
-
-#include <string>
-#include <vector>
-
 #include "pandarGeneral/pandarGeneral.h"
 #include "pandarGeneral/point_types.h"
 
-// class PandarGeneralSDK_Internal;
+#include <functional>
+#include <string>
 
 class PandarGeneralSDK {
   public:
@@ -79,33 +71,17 @@ class PandarGeneralSDK {
         std::string timestampType); // the default timestamp type is LiDAR time
     ~PandarGeneralSDK();
 
-    /**
-     * @brief load the correction file
-     * @param file The path of correction file
-     */
     int LoadLidarCorrectionFile(std::string correction_content);
     void ResetLidarStartAngle(uint16_t start_angle);
     std::string GetLidarCalibration();
-    void GetCalibrationFromDevice();
-    int Start();
+    void Start();
     void Stop();
 
-    /** @brief get major version.
-     * @Return   ： major version
-     */
     int getMajorVersion();
-
-    /**
-     * @brief get minor version.
-     * @Return   ： minor version
-     */
     int getMinorVersion();
 
   private:
-    PandarGeneral *pandarGeneral_;
-    std::thread *get_calibration_thr_;
-    bool enable_get_calibration_thr_;
-    bool got_lidar_calibration_;
+    std::unique_ptr<PandarGeneral> pandarGeneral_;
     std::string correction_content_;
-    std::string device_ip_;
+    bool getCalibrationFromDevice(const std::string &device_ip);
 };

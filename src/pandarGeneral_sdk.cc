@@ -15,12 +15,11 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
-#include "log.h"
 #include "tcp_command_client.h"
-#include "version.h"
-#include "yaml-cpp/yaml.h"
 
-constexpr int PANDAR_GENERALSDK_TCP_COMMAND_PORT = 9347;
+#include <cstdlib>
+
+constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
 
 PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
@@ -37,10 +36,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string frame_id,
     std::string timestampType) {
 
-    printVersion();
-    pandarGeneral_ = NULL;
-
-    pandarGeneral_ = new PandarGeneral(
+    pandarGeneral_ = std::make_unique<PandarGeneral>(
         device_ip,
         lidar_port,
         lidar_algorithm_port,
@@ -55,10 +51,13 @@ PandarGeneralSDK::PandarGeneralSDK(
         frame_id,
         timestampType);
 
-    get_calibration_thr_ = NULL;
-    enable_get_calibration_thr_ = false;
-    got_lidar_calibration_ = false;
-    device_ip_ = device_ip;
+    // Try to get calibration.
+    for (int i = 0; i < 5; ++i) {
+        if (getCalibrationFromDevice(device_ip)) {
+            return;
+        }
+    }
+    abort();
 }
 
 PandarGeneralSDK::PandarGeneralSDK(
@@ -70,10 +69,8 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
-    printVersion();
-    pandarGeneral_ = NULL;
 
-    pandarGeneral_ = new PandarGeneral(
+    pandarGeneral_ = std::make_unique<PandarGeneral>(
         pcap_path,
         pcl_callback,
         start_angle,
@@ -82,102 +79,54 @@ PandarGeneralSDK::PandarGeneralSDK(
         lidar_type,
         frame_id,
         timestampType);
-
-    get_calibration_thr_ = NULL;
-    enable_get_calibration_thr_ = false;
-    got_lidar_calibration_ = false;
 }
 
-PandarGeneralSDK::~PandarGeneralSDK() {
-    Stop();
-    if (pandarGeneral_) {
-        delete pandarGeneral_;
-    }
+PandarGeneralSDK::~PandarGeneralSDK() { Stop(); }
+
+int PandarGeneralSDK::LoadLidarCorrectionFile(std::string file) {
+    return pandarGeneral_->LoadCorrectionFile(file);
 }
 
-/**
- * @brief load the correction file
- * @param file The path of correction file
- */
-int PandarGeneralSDK::LoadLidarCorrectionFile(std::string correction_content) {
-    return pandarGeneral_->LoadCorrectionFile(correction_content);
-}
-
-/**
- * @brief load the correction file
- * @param angle The start angle
- */
 void PandarGeneralSDK::ResetLidarStartAngle(uint16_t start_angle) {
-    if (!pandarGeneral_)
-        return;
     pandarGeneral_->ResetStartAngle(start_angle);
 }
 
 std::string PandarGeneralSDK::GetLidarCalibration() { return correction_content_; }
 
-int PandarGeneralSDK::Start() {
-    // LOG_FUNC();
+void PandarGeneralSDK::Start() {
     Stop();
-
-    if (pandarGeneral_) {
-        pandarGeneral_->Start();
-    }
-
-    enable_get_calibration_thr_ = true;
-    get_calibration_thr_ =
-        new std::thread(std::bind(&PandarGeneralSDK::GetCalibrationFromDevice, this));
+    pandarGeneral_->Start();
 }
+void PandarGeneralSDK::Stop() { pandarGeneral_->Stop(); }
 
-void PandarGeneralSDK::Stop() {
-    if (pandarGeneral_)
-        pandarGeneral_->Stop();
+int PandarGeneralSDK::getMajorVersion() { return pandarGeneral_->getMajorVersion(); }
+int PandarGeneralSDK::getMinorVersion() { return pandarGeneral_->getMinorVersion(); }
 
-    enable_get_calibration_thr_ = false;
-    if (get_calibration_thr_) {
-        get_calibration_thr_->join();
+bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
+
+    // Dual Check
+    auto [ec, feedback] = TcpCommand::getLidarCalibration(device_ip, PANDAR_TCP_COMMAND_PORT);
+    auto [ec2, feedback2] = TcpCommand::getLidarCalibration(device_ip, PANDAR_TCP_COMMAND_PORT);
+
+    if (ec != TcpCommand::PTC_ErrCode::NO_ERROR || ec2 != TcpCommand::PTC_ErrCode::NO_ERROR) {
+        std::cout << "Fail to get correction content\n";
+        return false;
     }
-}
 
-void PandarGeneralSDK::GetCalibrationFromDevice() {
-    // LOG_FUNC();
-    if (device_ip_.empty()) {
-        return;
+    std::string correction_content(feedback.payload.begin(), feedback.payload.end());
+    std::string correction_content2(feedback2.payload.begin(), feedback2.payload.end());
+    if (correction_content != correction_content2) {
+        std::cout << "Fail to pass the dual check\n";
+        return false;
     }
 
-    while (enable_get_calibration_thr_ && !got_lidar_calibration_) {
-        if (!got_lidar_calibration_) {
-            // get lidar calibration.
-            auto [ec, feedback] =
-                TcpCommand::getLidarCalibration(device_ip_, PANDAR_GENERALSDK_TCP_COMMAND_PORT);
-            if (ec == TcpCommand::PTC_ErrCode::NO_ERROR) {
-                // success;
-                std::string correction_content(feedback.payload.begin(), feedback.payload.end());
-                if (pandarGeneral_) {
-                    int ret = pandarGeneral_->LoadCorrectionFile(correction_content);
-                    if (ret != 0) {
-                        std::cout << "Parse Lidar Correction Error" << std::endl;
-                        got_lidar_calibration_ = false;
-                    } else {
-                        std::cout << "Parse Lidar Correction Success!!!" << std::endl;
-                        correction_content_ = correction_content;
-                        got_lidar_calibration_ = true;
-                    }
-                }
-            }
-        }
-
-        sleep(1);
-    }
-}
-
-int PandarGeneralSDK::getMajorVersion() {
-    if (pandarGeneral_) {
-        pandarGeneral_->getMajorVersion();
-    }
-}
-
-int PandarGeneralSDK::getMinorVersion() {
-    if (pandarGeneral_) {
-        pandarGeneral_->getMinorVersion();
+    int ret = pandarGeneral_->LoadCorrectionFile(correction_content);
+    if (ret != 0) {
+        std::cout << "Fail to parse lidar correction\n";
+        return false;
+    } else {
+        std::cout << "Parse Lidar Correction Success\n";
+        correction_content_ = correction_content;
+        return true;
     }
 }

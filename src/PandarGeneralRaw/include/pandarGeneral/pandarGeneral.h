@@ -16,15 +16,10 @@
 
 #pragma once
 
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pthread.h>
-#include <semaphore.h>
-
-#include <string>
-
 #include "pandarGeneral/pandarGeneral_internal.h"
 #include "pandarGeneral/point_types.h"
+
+#include <string>
 
 class PandarGeneral_Internal;
 

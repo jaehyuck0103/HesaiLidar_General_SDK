@@ -16,19 +16,17 @@
 
 #pragma once
 
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <semaphore.h>
-#include <thread>
-
-#include <list>
-#include <string>
-
 #include "input.h"
 #include "pandarGeneral/point_types.h"
 #include "pandarQT.h"
 #include "pandarXT.h"
 #include "pcap_reader.h"
+
+#include <semaphore.h>
+#include <thread>
+
+#include <list>
+#include <string>
 
 #define SOB_ANGLE_SIZE (4)
 #define RAW_MEASURE_SIZE (3)
@@ -304,15 +302,15 @@ typedef struct {
 } HS_Object3D_Data;
 #pragma pack()
 
-typedef struct {
+struct HS_Object3D_Object {
     OBJ_TYPE type;
     HS_Object3D_Data data;
-} HS_Object3D_Object;
+};
 
-typedef struct {
+struct HS_Object3D_Object_List {
     int valid_size;                       //!< Total number of objects
     std::vector<HS_Object3D_Object> data; //!< Object data array
-} HS_Object3D_Object_List;
+};
 
 class PandarGeneral_Internal {
   public:
