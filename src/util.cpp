@@ -14,6 +14,8 @@
  * limitations under the License.
  *****************************************************************************/
 
+#include "pandar/util.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -32,8 +34,6 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
-
-#include "util.h"
 
 int sys_readn(int fd, unsigned char *vptr, int n) {
     // printf("start sys_readn: %d....\n", n);

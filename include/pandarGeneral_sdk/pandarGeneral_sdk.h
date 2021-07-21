@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "pandarGeneral/pandarGeneral_internal.h"
-#include "pandarGeneral/point_types.h"
+#include "pandar/pandarGeneral_internal.h"
+#include "pandar/point_types.h"
 
 #include <functional>
 #include <string>

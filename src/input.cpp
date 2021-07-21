@@ -14,7 +14,10 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include "../util.h"
+#include "pandar/input.h"
+#include "pandar/log.h"
+#include "pandar/util.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -26,9 +29,6 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <time.h>
-
-#include "input.h"
-#include "log.h"
 
 Input::Input(uint16_t port, uint16_t gpsPort) {
     // LOG_D("port: %d, gpsPort: %d", port,gpsPort);

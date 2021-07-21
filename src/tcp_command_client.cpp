@@ -14,8 +14,8 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include "tcp_command_client.h"
-#include "util.h"
+#include "pandar/tcp_command_client.h"
+#include "pandar/util.h"
 #include <array>
 #include <iomanip>
 #include <iostream>

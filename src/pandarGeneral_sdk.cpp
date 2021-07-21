@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
-#include "tcp_command_client.h"
+#include "pandar/tcp_command_client.h"
 
 #include <cstdlib>
 

@@ -17,10 +17,10 @@
 #pragma once
 
 #include "input.h"
-#include "pandarGeneral/point_types.h"
 #include "pandarQT.h"
 #include "pandarXT.h"
 #include "pcap_reader.h"
+#include "point_types.h"
 
 #include <semaphore.h>
 #include <thread>
