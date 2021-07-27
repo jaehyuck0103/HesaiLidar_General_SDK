@@ -28,26 +28,34 @@
 #include <list>
 #include <string>
 
-#define SOB_ANGLE_SIZE (4)
-#define RAW_MEASURE_SIZE (3)
-#define LASER_COUNT (40)
-#define BLOCKS_PER_PACKET (10)
-#define BLOCK_SIZE (RAW_MEASURE_SIZE * LASER_COUNT + SOB_ANGLE_SIZE)
-#define TIMESTAMP_SIZE (4)
-#define FACTORY_INFO_SIZE (1)
-#define ECHO_SIZE (1)
-#define RESERVE_SIZE (8)
-#define REVOLUTION_SIZE (2)
-#define INFO_SIZE (TIMESTAMP_SIZE + FACTORY_INFO_SIZE + ECHO_SIZE + RESERVE_SIZE + REVOLUTION_SIZE)
-#define UTC_TIME (6)
-#define PACKET_SIZE (BLOCK_SIZE * BLOCKS_PER_PACKET + INFO_SIZE + UTC_TIME)
-#define LASER_RETURN_TO_DISTANCE_RATE (0.004)
-#define SEQ_NUM_SIZE (4)
+/**
+ * Pandar 40
+ */
+#define HS_LIDAR_L40_SOB_SIZE (4)
+#define HS_LIDAR_L40_RAW_MEASURE_SIZE (3)
+#define HS_LIDAR_L40_LASER_COUNT (40)
+#define HS_LIDAR_L40_BLOCKS_PER_PACKET (10)
+#define HS_LIDAR_L40_BLOCK_SIZE                                                                   \
+    (HS_LIDAR_L40_RAW_MEASURE_SIZE * HS_LIDAR_L40_LASER_COUNT + HS_LIDAR_L40_SOB_SIZE)
+#define HS_LIDAR_L40_TIMESTAMP_SIZE (4)
+#define HS_LIDAR_L40_FACTORY_INFO_SIZE (1)
+#define HS_LIDAR_L40_ECHO_SIZE (1)
+#define HS_LIDAR_L40_RESERVE_SIZE (8)
+#define HS_LIDAR_L40_REVOLUTION_SIZE (2)
+#define HS_LIDAR_L40_INFO_SIZE                                                                    \
+    (HS_LIDAR_L40_TIMESTAMP_SIZE + HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE +      \
+     HS_LIDAR_L40_RESERVE_SIZE + HS_LIDAR_L40_REVOLUTION_SIZE)
+#define HS_LIDAR_L40_UTC_TIME (6)
+#define HS_LIDAR_L40_PACKET_SIZE                                                                  \
+    (HS_LIDAR_L40_BLOCK_SIZE * HS_LIDAR_L40_BLOCKS_PER_PACKET + HS_LIDAR_L40_INFO_SIZE +          \
+     HS_LIDAR_L40_UTC_TIME)
+#define HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE (0.004)
+#define HS_LIDAR_L40_SEQ_NUM_SIZE (4)
 
 /**
  * Pandar 64
  */
-#define HS_LIDAR_TIME_SIZE (6)
+#define HS_LIDAR_L64_TIME_SIZE (6)
 // Each Packet have 8 byte
 #define HS_LIDAR_L64_HEAD_SIZE (8)
 // Block number 6 or 7
@@ -115,19 +123,19 @@
 
 #define MAX_LASER_NUM (256)
 
-struct Pandar40PUnit {
+struct HS_LIDAR_L40_Unit {
     uint8_t intensity;
     double distance;
 };
 
-struct Pandar40PBlock {
+struct HS_LIDAR_L40_Block {
     uint16_t azimuth;
     uint16_t sob;
-    Pandar40PUnit units[LASER_COUNT];
+    HS_LIDAR_L40_Unit units[HS_LIDAR_L40_LASER_COUNT];
 };
 
-struct Pandar40PPacket {
-    Pandar40PBlock blocks[BLOCKS_PER_PACKET];
+struct HS_LIDAR_L40_Packet {
+    HS_LIDAR_L40_Block blocks[HS_LIDAR_L40_BLOCKS_PER_PACKET];
     struct tm t;
     uint32_t usec;
     int echo;
@@ -232,7 +240,7 @@ class PandarGeneral_Internal {
      */
     void ResetStartAngle(uint16_t start_angle);
 
-    int Start();
+    void Start();
     void Stop();
 
   private:
@@ -241,13 +249,15 @@ class PandarGeneral_Internal {
     void ProcessGps(const PandarGPS &gpsMsg);
     void ProcessLidarPacket();
     void PushLidarData(PandarPacket packet);
-    int ParseRawData(Pandar40PPacket *packet, const uint8_t *buf, const int len);
+
+    int ParseL40Data(HS_LIDAR_L40_Packet *packet, const uint8_t *buf, const int len);
     int ParseL64Data(HS_LIDAR_L64_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseQTData(HS_LIDAR_QT_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseXTData(HS_LIDAR_XT_Packet *packet, const uint8_t *recvbuf, const int len);
-
     int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
-    void CalcPointXYZIT(Pandar40PPacket *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
+
+    void
+    CalcL40PointXYZIT(HS_LIDAR_L40_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
     void CalcL64PointXYZIT(
         HS_LIDAR_L64_Packet *pkt,
         int blockid,
@@ -263,9 +273,10 @@ class PandarGeneral_Internal {
         int blockid,
         char chLaserNumber,
         std::shared_ptr<PPointCloud> cld);
-    void FillPacket(const uint8_t *buf, const int len, double timestamp);
 
+    void FillPacket(const uint8_t *buf, const int len, double timestamp);
     void EmitBackMessege(char chLaserNumber, std::shared_ptr<PPointCloud> cld);
+
     pthread_mutex_t lidar_lock_;
     sem_t lidar_sem_;
     std::thread *lidar_recv_thr_;
@@ -276,7 +287,7 @@ class PandarGeneral_Internal {
     std::string m_sTimestampType;
     double m_dPktTimestamp;
 
-    std::list<struct PandarPacket> lidar_packets_;
+    std::list<PandarPacket> lidar_packets_;
 
     std::unique_ptr<Input> input_;
     std::function<void(std::shared_ptr<PPointCloud> cld, double timestamp)> pcl_callback_;
@@ -294,9 +305,9 @@ class PandarGeneral_Internal {
     float block64OffsetDual_[HS_LIDAR_L64_BLOCK_NUMBER_6];
     float laser64Offset_[HS_LIDAR_L64_UNIT_NUM];
 
-    float block40OffsetSingle_[BLOCKS_PER_PACKET];
-    float block40OffsetDual_[BLOCKS_PER_PACKET];
-    float laser40Offset_[LASER_COUNT];
+    float block40OffsetSingle_[HS_LIDAR_L40_BLOCKS_PER_PACKET];
+    float block40OffsetDual_[HS_LIDAR_L40_BLOCKS_PER_PACKET];
+    float laser40Offset_[HS_LIDAR_L40_LASER_COUNT];
 
     float blockQTOffsetSingle_[HS_LIDAR_QT_BLOCK_NUMBER];
     float blockQTOffsetDual_[HS_LIDAR_QT_BLOCK_NUMBER];

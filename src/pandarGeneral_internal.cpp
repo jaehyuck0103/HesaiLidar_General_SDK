@@ -379,7 +379,7 @@ void PandarGeneral_Internal::Init() {
     laserQTOffset_[63] = 10.0f + 136.45f;
 
     if (m_sLidarType == "Pandar40P" || m_sLidarType == "Pandar40M") {
-        for (int i = 0; i < LASER_COUNT; i++) {
+        for (int i = 0; i < HS_LIDAR_L40_LASER_COUNT; i++) {
             General_elev_angle_map_[i] = pandar40p_elev_angle_map[i];
             General_horizatal_azimuth_offset_map_[i] = pandar40p_horizatal_azimuth_offset_map[i];
         }
@@ -482,7 +482,7 @@ int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
  */
 void PandarGeneral_Internal::ResetStartAngle(uint16_t start_angle) { start_angle_ = start_angle; }
 
-int PandarGeneral_Internal::Start() {
+void PandarGeneral_Internal::Start() {
     // LOG_FUNC();
     Stop();
     enable_lidar_recv_thr_ = true;
@@ -581,15 +581,16 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
         pthread_mutex_unlock(&lidar_lock_);
         m_dPktTimestamp = packet.stamp;
 
-        if (packet.size == PACKET_SIZE || packet.size == PACKET_SIZE + SEQ_NUM_SIZE) {
-            Pandar40PPacket pkt;
-            ret = ParseRawData(&pkt, packet.data, packet.size);
+        if (packet.size == HS_LIDAR_L40_PACKET_SIZE ||
+            packet.size == HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
+            HS_LIDAR_L40_Packet pkt;
+            ret = ParseL40Data(&pkt, packet.data, packet.size);
 
             if (ret != 0) {
                 continue;
             }
 
-            for (int i = 0; i < BLOCKS_PER_PACKET; ++i) {
+            for (int i = 0; i < HS_LIDAR_L40_BLOCKS_PER_PACKET; ++i) {
                 int azimuthGap = 0; /* To do */
 
                 if (last_azimuth_ > pkt.blocks[i].azimuth) {
@@ -607,12 +608,12 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
                         (last_azimuth_ < start_angle_ && start_angle_ <= pkt.blocks[i].azimuth)) {
                         if (pcl_callback_ &&
                             (outMsg->points.size() > 0 || PointCloudList[0].size() > 0)) {
-                            EmitBackMessege(LASER_COUNT, outMsg);
+                            EmitBackMessege(HS_LIDAR_L40_LASER_COUNT, outMsg);
                             outMsg.reset(new PPointCloud());
                         }
                     }
                 }
-                CalcPointXYZIT(&pkt, i, outMsg);
+                CalcL40PointXYZIT(&pkt, i, outMsg);
                 last_azimuth_ = pkt.blocks[i].azimuth;
             }
         } else if (
@@ -769,31 +770,33 @@ void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
     }
 }
 
-int PandarGeneral_Internal::ParseRawData(
-    Pandar40PPacket *packet,
+int PandarGeneral_Internal::ParseL40Data(
+    HS_LIDAR_L40_Packet *packet,
     const uint8_t *buf,
     const int len) {
-    if (len != PACKET_SIZE && len != PACKET_SIZE + SEQ_NUM_SIZE) {
-        std::cout << "packet size mismatch PandarGeneral_Internal " << len << "," << PACKET_SIZE
-                  << std::endl;
+    if (len != HS_LIDAR_L40_PACKET_SIZE &&
+        len != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
+        std::cout << "packet size mismatch PandarGeneral_Internal " << len << ","
+                  << HS_LIDAR_L40_PACKET_SIZE << std::endl;
         return -1;
     }
 
     int index = 0;
     // 10 BLOCKs
-    for (int i = 0; i < BLOCKS_PER_PACKET; i++) {
-        Pandar40PBlock &block = packet->blocks[i];
+    for (int i = 0; i < HS_LIDAR_L40_BLOCKS_PER_PACKET; i++) {
+        HS_LIDAR_L40_Block &block = packet->blocks[i];
 
         block.sob = (buf[index] & 0xff) | ((buf[index + 1] & 0xff) << 8);
         block.azimuth = (buf[index + 2] & 0xff) | ((buf[index + 3] & 0xff) << 8);
-        index += SOB_ANGLE_SIZE;
+        index += HS_LIDAR_L40_SOB_SIZE;
         // 40x units
-        for (int j = 0; j < LASER_COUNT; j++) {
-            Pandar40PUnit &unit = block.units[j];
+        for (int j = 0; j < HS_LIDAR_L40_LASER_COUNT; j++) {
+            HS_LIDAR_L40_Unit &unit = block.units[j];
             uint32_t range = (buf[index] & 0xff) | ((buf[index + 1] & 0xff) << 8);
 
             // distance is M.
-            unit.distance = (static_cast<double>(range)) * LASER_RETURN_TO_DISTANCE_RATE;
+            unit.distance =
+                (static_cast<double>(range)) * HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE;
             unit.intensity = (buf[index + 2] & 0xff);
 
             // TODO(Philip.Pi): Filtering wrong data for LiDAR.
@@ -803,22 +806,22 @@ int PandarGeneral_Internal::ParseRawData(
                 unit.intensity = 0;
             }
 
-            index += RAW_MEASURE_SIZE;
+            index += HS_LIDAR_L40_RAW_MEASURE_SIZE;
         }
     }
 
-    index += RESERVE_SIZE; // skip reserved bytes
+    index += HS_LIDAR_L40_RESERVE_SIZE; // skip reserved bytes
 
-    index += REVOLUTION_SIZE;
+    index += HS_LIDAR_L40_REVOLUTION_SIZE;
 
     packet->usec = (buf[index] & 0xff) | (buf[index + 1] & 0xff) << 8 |
                    ((buf[index + 2] & 0xff) << 16) | ((buf[index + 3] & 0xff) << 24);
     packet->usec %= 1000000;
 
-    index += TIMESTAMP_SIZE;
+    index += HS_LIDAR_L40_TIMESTAMP_SIZE;
     packet->echo = buf[index] & 0xff;
 
-    index += FACTORY_INFO_SIZE + ECHO_SIZE;
+    index += HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE;
 
     // parse the UTC Time.
 
@@ -906,7 +909,7 @@ int PandarGeneral_Internal::ParseL64Data(
     packet->addtime[4] = recvbuf[index + 4] & 0xff;
     packet->addtime[5] = recvbuf[index + 5] & 0xff;
 
-    index += HS_LIDAR_TIME_SIZE;
+    index += HS_LIDAR_L64_TIME_SIZE;
 
     return 0;
 }
@@ -978,7 +981,7 @@ int PandarGeneral_Internal::ParseQTData(
     packet->addtime[4] = recvbuf[index + 4] & 0xff;
     packet->addtime[5] = recvbuf[index + 5] & 0xff;
 
-    index += HS_LIDAR_TIME_SIZE;
+    index += HS_LIDAR_QT_UTC_SIZE;
 
     return 0;
 }
@@ -1074,17 +1077,17 @@ int PandarGeneral_Internal::ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, 
     return 0;
 }
 
-void PandarGeneral_Internal::CalcPointXYZIT(
-    Pandar40PPacket *pkt,
+void PandarGeneral_Internal::CalcL40PointXYZIT(
+    HS_LIDAR_L40_Packet *pkt,
     int blockid,
     std::shared_ptr<PPointCloud> cld) {
-    Pandar40PBlock *block = &pkt->blocks[blockid];
+    HS_LIDAR_L40_Block *block = &pkt->blocks[blockid];
 
     double unix_second = static_cast<double>(mktime(&pkt->t) + tz_second_);
 
-    for (int i = 0; i < LASER_COUNT; ++i) {
+    for (int i = 0; i < HS_LIDAR_L40_LASER_COUNT; ++i) {
         /* for all the units in a block */
-        Pandar40PUnit &unit = block->units[i];
+        HS_LIDAR_L40_Unit &unit = block->units[i];
         PPoint point;
 
         /* skip wrong points */
