@@ -1,6 +1,7 @@
-/**
- * Pandar XT
- */
+#pragma once
+
+#include <cstdint>
+
 // Head
 #define HS_LIDAR_XT_HEAD_SIZE (12)
 // Body
@@ -29,44 +30,34 @@
 
 #define HS_LIDAR_XT_MAJOR_VERSION (6)
 
-typedef struct HS_LIDAR_XT_Header_s {
-    unsigned short sob;   // 0xFFEE 2bytes
-    char chProtocolMajor; // Protocol Version Major 1byte
-    char chProtocolMinor; // Protocol Version Minor 1byte
-    char chLaserNumber;   // laser number 1byte
-    char chBlockNumber;   // block number 1byte
-    char chReturnType;    // return mode 1 byte  when dual return 0-Single Return
-    char chDisUnit;       // Distance unit, 4mm
-  public:
-    HS_LIDAR_XT_Header_s() {
-        sob = 0;
-        chProtocolMajor = 0;
-        chProtocolMinor = 0;
-        chLaserNumber = 0;
-        chBlockNumber = 0;
-        chReturnType = 0;
-        chDisUnit = 0;
-    }
-} HS_LIDAR_XT_Header;
+struct HS_LIDAR_XT_Header {
+    uint16_t sob = 0;            // 0xFFEE 2bytes
+    uint8_t chProtocolMajor = 0; // Protocol Version Major 1byte
+    uint8_t chProtocolMinor = 0; // Protocol Version Minor 1byte
+    uint8_t chLaserNumber = 0;   // laser number 1byte
+    uint8_t chBlockNumber = 0;   // block number 1byte
+    uint8_t chReturnType = 0;    // return mode 1 byte  when dual return 0-Single Return
+    uint8_t chDisUnit = 0;       // Distance unit, 4mm
+};
 
-typedef struct HS_LIDAR_XT_Unit_s {
+struct HS_LIDAR_XT_Unit {
     double distance;
-    unsigned short intensity;
-    unsigned short confidence;
-} HS_LIDAR_XT_Unit;
+    uint16_t intensity;
+    uint16_t confidence;
+};
 
-typedef struct HS_LIDAR_XT_Block_s {
-    unsigned short azimuth; // packet angle  ,Azimuth = RealAzimuth * 100
+struct HS_LIDAR_XT_Block {
+    uint16_t azimuth; // Azimuth = RealAzimuth * 100
     HS_LIDAR_XT_Unit units[HS_LIDAR_XT_UNIT_NUM];
-} HS_LIDAR_XT_Block;
+};
 
-typedef struct HS_LIDAR_XT_Packet_s {
+struct HS_LIDAR_XT_Packet {
     HS_LIDAR_XT_Header header;
     HS_LIDAR_XT_Block blocks[HS_LIDAR_XT_BLOCK_NUMBER];
-    unsigned int timestamp; // ms
-    unsigned int echo;
-    unsigned char addtime[6];
-} HS_LIDAR_XT_Packet;
+    uint32_t timestamp;
+    uint32_t echo;
+    uint8_t addtime[6];
+};
 
 const float pandarXT_elev_angle_map[] = {
     15.0f, 14.0f, 13.0f, 12.0f,  11.0f,  10.0f,  9.0f,   8.0f,   7.0f,   6.0f,  5.0f,

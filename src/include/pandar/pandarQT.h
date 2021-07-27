@@ -1,6 +1,7 @@
-/**
- * Pandar QT
- */
+#pragma once
+
+#include <cstdint>
+
 // Head
 #define HS_LIDAR_QT_HEAD_SIZE (12)
 #define HS_LIDAR_QT_PRE_HEADER_SIZE (6)
@@ -29,46 +30,36 @@
 #define HS_LIDAR_QT_PACKET_WITHOUT_UDPSEQ_SIZE                                                    \
     (HS_LIDAR_QT_HEAD_SIZE + HS_LIDAR_QT_BODY_SIZE + HS_LIDAR_QT_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
 
-typedef struct HS_LIDAR_QT_Header_s {
-    unsigned short sob;   // 0xFFEE 2bytes
-    char chProtocolMajor; // Protocol Version Major 1byte
-    char chProtocolMinor; // Protocol Version Minor 1byte
-    char chLaserNumber;   // laser number 1byte
-    char chBlockNumber;   // block number 1byte
-    char chReturnType;    // return mode 1 byte  when dual return 0-Single Return
-                          // 1-The first block is the 1 st return.
-                          // 2-The first block is the 2 nd return
-    char chDisUnit;       // Distance unit, 4mm
-  public:
-    HS_LIDAR_QT_Header_s() {
-        sob = 0;
-        chProtocolMajor = 0;
-        chProtocolMinor = 0;
-        chLaserNumber = 0;
-        chBlockNumber = 0;
-        chReturnType = 0;
-        chDisUnit = 0;
-    }
-} HS_LIDAR_QT_Header;
+struct HS_LIDAR_QT_Header {
+    uint16_t sob = 0;            // 0xFFEE 2bytes
+    uint8_t chProtocolMajor = 0; // Protocol Version Major 1byte
+    uint8_t chProtocolMinor = 0; // Protocol Version Minor 1byte
+    uint8_t chLaserNumber = 0;   // laser number 1byte
+    uint8_t chBlockNumber = 0;   // block number 1byte
+    uint8_t chReturnType = 0;    // return mode 1 byte  when dual return 0-Single Return
+                                 // 1-The first block is the 1 st return.
+                                 // 2-The first block is the 2 nd return
+    uint8_t chDisUnit = 0;       // Distance unit, 4mm
+};
 
-typedef struct HS_LIDAR_QT_Unit_s {
+struct HS_LIDAR_QT_Unit {
     double distance;
-    unsigned short intensity;
-    unsigned short confidence;
-} HS_LIDAR_QT_Unit;
+    uint16_t intensity;
+    uint16_t confidence;
+};
 
-typedef struct HS_LIDAR_QT_Block_s {
-    unsigned short azimuth; // packet angle  ,Azimuth = RealAzimuth * 100
+struct HS_LIDAR_QT_Block {
+    uint16_t azimuth; // Azimuth = RealAzimuth * 100
     HS_LIDAR_QT_Unit units[HS_LIDAR_QT_UNIT_NUM];
-} HS_LIDAR_QT_Block;
+};
 
-typedef struct HS_LIDAR_QT_Packet_s {
+struct HS_LIDAR_QT_Packet {
     HS_LIDAR_QT_Header header;
     HS_LIDAR_QT_Block blocks[HS_LIDAR_QT_BLOCK_NUMBER];
-    unsigned int timestamp; // ms
-    unsigned int echo;
-    unsigned char addtime[6];
-} HS_LIDAR_QT_Packet;
+    uint32_t timestamp;
+    uint32_t echo;
+    uint8_t addtime[6];
+};
 
 const float pandarQT_elev_angle_map[] = {
     -52.121f, -49.785f, -47.577f, -45.477f, -43.465f, -41.528f, -39.653f, -37.831f,

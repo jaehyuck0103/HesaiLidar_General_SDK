@@ -25,38 +25,6 @@
 
 double degreeToRadian(double degree) { return degree * M_PI / 180; }
 
-// elevation angle of each line for HS Line 40 Lidar, Line 1 - Line 40
-static const float pandar40p_elev_angle_map[] = {
-    15.0f, 11.0f,  8.0f,   5.0f,   3.0f,   2.0f,   1.67f,  1.33f,  1.0f,   0.67f,
-    0.33f, 0.0f,   -0.33f, -0.67f, -1.0f,  -1.33f, -1.66f, -2.0f,  -2.33f, -2.67f,
-    -3.0f, -3.33f, -3.67f, -4.0f,  -4.33f, -4.67f, -5.0f,  -5.33f, -5.67f, -6.0f,
-    -7.0f, -8.0f,  -9.0f,  -10.0f, -11.0f, -12.0f, -13.0f, -14.0f, -19.0f, -25.0f};
-
-static const float pandar64_elev_angle_map[] = {
-    14.882f,  11.032f, 8.059f,   5.057f,  3.04f,   2.028f,  1.86f,   1.688f,  1.522f,   1.351f,
-    1.184f,   1.013f,  0.846f,   0.675f,  0.508f,  0.337f,  0.169f,  0.0f,    -0.169f,  -0.337f,
-    -0.508f,  -0.675f, -0.845f,  -1.013f, -1.184f, -1.351f, -1.522f, -1.688f, -1.86f,   -2.028f,
-    -2.198f,  -2.365f, -2.536f,  -2.7f,   -2.873f, -3.04f,  -3.21f,  -3.375f, -3.548f,  -3.712f,
-    -3.884f,  -4.05f,  -4.221f,  -4.385f, -4.558f, -4.72f,  -4.892f, -5.057f, -5.229f,  -5.391f,
-    -5.565f,  -5.726f, -5.898f,  -6.061f, -7.063f, -8.059f, -9.06f,  -9.885f, -11.032f, -12.006f,
-    -12.974f, -13.93f, -18.889f, -24.897f};
-
-// Line 40 Lidar azimuth Horizatal offset ,  Line 1 - Line 40
-static const float pandar40p_horizatal_azimuth_offset_map[] = {
-    -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,
-    -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f,
-    -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f,
-    -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f};
-
-static const float pandar64_horizatal_azimuth_offset_map[] = {
-    -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f,
-    -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,
-    5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f,
-    1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f,
-    -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,
-    5.208f,  -5.208f, -3.125f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f,
-    -1.042f, -1.042f, -1.042f, -1.042f};
-
 static std::vector<std::vector<PPoint>> PointCloudList(128);
 
 PandarGeneral_Internal::PandarGeneral_Internal(
@@ -560,7 +528,7 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
 
 void PandarGeneral_Internal::ProcessLidarPacket() {
     // LOG_FUNC();
-    struct timespec ts;
+    timespec ts;
     int ret = 0;
 
     std::shared_ptr<PPointCloud> outMsg(new PPointCloud());
@@ -751,7 +719,7 @@ void PandarGeneral_Internal::PushLidarData(PandarPacket packet) {
 }
 
 void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
-    struct tm t;
+    tm t;
     t.tm_sec = gpsMsg.second;
     t.tm_min = gpsMsg.minute;
 
@@ -1146,7 +1114,7 @@ void PandarGeneral_Internal::CalcL64PointXYZIT(
     std::shared_ptr<PPointCloud> cld) {
     HS_LIDAR_L64_Block *block = &pkt->blocks[blockid];
 
-    struct tm tTm;
+    tm tTm;
     // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
     // and mktime's year start from 1900 which is 0. so we need add 100 year.
     tTm.tm_year = pkt->addtime[0] + 100;
@@ -1227,7 +1195,7 @@ void PandarGeneral_Internal::CalcQTPointXYZIT(
     std::shared_ptr<PPointCloud> cld) {
     HS_LIDAR_QT_Block *block = &pkt->blocks[blockid];
 
-    struct tm tTm;
+    tm tTm;
     tTm.tm_year = pkt->addtime[0] + 100;
 
     // in case of time error
@@ -1305,7 +1273,7 @@ void PandarGeneral_Internal::CalcXTPointXYZIT(
     std::shared_ptr<PPointCloud> cld) {
     HS_LIDAR_XT_Block *block = &pkt->blocks[blockid];
 
-    struct tm tTm;
+    tm tTm;
     tTm.tm_year = pkt->addtime[0] + 100;
 
     // in case of time error

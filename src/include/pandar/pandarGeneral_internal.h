@@ -17,6 +17,8 @@
 #pragma once
 
 #include "input.h"
+#include "pandar40.h"
+#include "pandar64.h"
 #include "pandarQT.h"
 #include "pandarXT.h"
 #include "pcap_reader.h"
@@ -29,85 +31,8 @@
 #include <string>
 
 /**
- * Pandar 40
- */
-#define HS_LIDAR_L40_SOB_SIZE (4)
-#define HS_LIDAR_L40_RAW_MEASURE_SIZE (3)
-#define HS_LIDAR_L40_LASER_COUNT (40)
-#define HS_LIDAR_L40_BLOCKS_PER_PACKET (10)
-#define HS_LIDAR_L40_BLOCK_SIZE                                                                   \
-    (HS_LIDAR_L40_RAW_MEASURE_SIZE * HS_LIDAR_L40_LASER_COUNT + HS_LIDAR_L40_SOB_SIZE)
-#define HS_LIDAR_L40_TIMESTAMP_SIZE (4)
-#define HS_LIDAR_L40_FACTORY_INFO_SIZE (1)
-#define HS_LIDAR_L40_ECHO_SIZE (1)
-#define HS_LIDAR_L40_RESERVE_SIZE (8)
-#define HS_LIDAR_L40_REVOLUTION_SIZE (2)
-#define HS_LIDAR_L40_INFO_SIZE                                                                    \
-    (HS_LIDAR_L40_TIMESTAMP_SIZE + HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE +      \
-     HS_LIDAR_L40_RESERVE_SIZE + HS_LIDAR_L40_REVOLUTION_SIZE)
-#define HS_LIDAR_L40_UTC_TIME (6)
-#define HS_LIDAR_L40_PACKET_SIZE                                                                  \
-    (HS_LIDAR_L40_BLOCK_SIZE * HS_LIDAR_L40_BLOCKS_PER_PACKET + HS_LIDAR_L40_INFO_SIZE +          \
-     HS_LIDAR_L40_UTC_TIME)
-#define HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE (0.004)
-#define HS_LIDAR_L40_SEQ_NUM_SIZE (4)
-
-/**
- * Pandar 64
- */
-#define HS_LIDAR_L64_TIME_SIZE (6)
-// Each Packet have 8 byte
-#define HS_LIDAR_L64_HEAD_SIZE (8)
-// Block number 6 or 7
-#define HS_LIDAR_L64_BLOCK_NUMBER_6 (6)
-#define HS_LIDAR_L64_BLOCK_NUMBER_7 (7)
-
-// each block first 2 byte  is azimuth
-#define HS_LIDAR_L64_BLOCK_HEADER_AZIMUTH (2)
-// each block have  64 Unit
-#define HS_LIDAR_L64_UNIT_NUM (64)
-// each Unit have 3 byte :2 bytes(distance) + 1 byte(intensity)
-#define HS_LIDAR_L64_UNIT_SIZE (3)
-// total block size 194
-#define HS_LIDAR_L64_BLOCK_SIZE                                                                   \
-    (HS_LIDAR_L64_UNIT_SIZE * HS_LIDAR_L64_UNIT_NUM + HS_LIDAR_L64_BLOCK_HEADER_AZIMUTH)
-
-// Block tail = timestamp ( 4 bytes ) + factory num (2 bytes)
-#define HS_LIDAR_L64_TIMESTAMP_SIZE (4)
-#define HS_LIDAR_L64_ECHO_SIZE (1)
-#define HS_LIDAR_L64_FACTORY_SIZE (1)
-#define HS_LIDAR_L64_RESERVED_SIZE (8)
-#define HS_LIDAR_L64_ENGINE_VELOCITY (2)
-
-// packet body size two type
-#define HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE                                                     \
-    (HS_LIDAR_L64_BLOCK_SIZE * HS_LIDAR_L64_BLOCK_NUMBER_6)
-#define HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE                                                     \
-    (HS_LIDAR_L64_BLOCK_SIZE * HS_LIDAR_L64_BLOCK_NUMBER_7)
-
-// packet tail size
-#define HS_LIDAR_L64_PACKET_TAIL_SIZE (26)
-#define HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE (22)
-
-// total packet size two type,length: 1198 and 1392
-#define HS_LIDAR_L64_6PACKET_SIZE                                                                 \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_SIZE)
-#define HS_LIDAR_L64_7PACKET_SIZE                                                                 \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_SIZE)
-
-#define HS_LIDAR_L64_6PACKET_WITHOUT_UDPSEQ_SIZE                                                  \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
-#define HS_LIDAR_L64_7PACKET_WITHOUT_UDPSEQ_SIZE                                                  \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
-
-/**
  *
  */
-
 #define GPS_PACKET_SIZE (512)
 #define GPS_PACKET_FLAG_SIZE (2)
 #define GPS_PACKET_YEAR_SIZE (2)
@@ -122,54 +47,6 @@
 #define HesaiLidarSDK_DEFAULT_GPS_RECV_PORT 10110
 
 #define MAX_LASER_NUM (256)
-
-struct HS_LIDAR_L40_Unit {
-    uint8_t intensity;
-    double distance;
-};
-
-struct HS_LIDAR_L40_Block {
-    uint16_t azimuth;
-    uint16_t sob;
-    HS_LIDAR_L40_Unit units[HS_LIDAR_L40_LASER_COUNT];
-};
-
-struct HS_LIDAR_L40_Packet {
-    HS_LIDAR_L40_Block blocks[HS_LIDAR_L40_BLOCKS_PER_PACKET];
-    struct tm t;
-    uint32_t usec;
-    int echo;
-};
-
-/************Pandar64*******************************/
-struct HS_LIDAR_L64_Header {
-    unsigned short sob = 0; // 0xFFEE 2bytes
-    char chLaserNumber = 0; // laser number 1byte
-    char chBlockNumber = 0; // block number 1byte
-    char chReturnType = 0;  // return mode 1 byte  when dual return 0-Single Return
-                            // 1-The first block is the 1 st return.
-                            // 2-The first block is the 2 nd return
-    char chDisUnit = 0;     // Distance unit, 6mm/5mm/4mm
-};
-
-struct HS_LIDAR_L64_Unit {
-    double distance;
-    unsigned short intensity;
-};
-
-struct HS_LIDAR_L64_Block {
-    unsigned short azimuth; // packet angle  ,Azimuth = RealAzimuth * 100
-    HS_LIDAR_L64_Unit units[HS_LIDAR_L64_UNIT_NUM];
-};
-
-struct HS_LIDAR_L64_Packet {
-    HS_LIDAR_L64_Header header;
-    HS_LIDAR_L64_Block blocks[HS_LIDAR_L64_BLOCK_NUMBER_7];
-    unsigned int timestamp; // ms
-    unsigned int echo;
-    unsigned char addtime[6];
-};
-/***************Pandar64****************************/
 
 struct PandarGPS {
     uint16_t flag;
