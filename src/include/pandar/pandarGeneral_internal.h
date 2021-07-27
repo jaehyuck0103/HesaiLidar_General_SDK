@@ -222,76 +222,6 @@ struct PandarGPS {
 
 #define ROTATION_MAX_UNITS (36001)
 
-#define HEADER_EXTERNAL_LEN (88)  // Publish UDP header length externally
-#define HEADER_INTERNAL_LEN (108) // Internal test UDP header length
-#define CRC_LEN (4)               // UDP packet end is 4, crc32 check bit
-#define INFO_HEAD_LEN (4)         // Information body start tag, length 4
-#define INFO_TAIL_LEN (4)         // The end of the message body tag, length 4
-#define REGULAR_INFO_LEN (216)    // Single box attribute size
-#define WGS84_LEN (16)            // WGS84 data structure size
-
-// Target object type enum constant
-typedef enum {
-    SMALLCAR = 0,  // Car
-    PEOPLE = 1,    // Pedestrian
-    NonMobile = 2, // Non-motorized vehicles
-    LARGECAR = 3,  // Large car
-    Unknown = 4    // other
-} OBJ_TYPE;
-
-#pragma pack(1)
-typedef struct {
-    short year;
-    char month;
-    char day;
-    char hour;
-    char minute;
-    char second;
-    char microsecond;
-} Utc_Time;
-#pragma pack()
-
-#pragma pack(4)
-typedef struct {
-    unsigned int id;    //!< Detection object identification id
-    uint64_t timestamp; //!< The timestamp of the end of object detection
-    float yaw[4];       // Quadruple of object pose
-    float rect_x;       //!< Object detection frame size xyz(m)
-    float rect_y;       //!< Object detection frame size xyz(m)
-    float rect_z;       //!< Object detection frame size xyz(m)
-
-    float rect_center_x; //!< Center of object detection frame xyz(m)
-    float rect_center_y; //!< Center of object detection frame xyz(m)
-    float rect_center_z; //!< Center of object detection frame xyz(m)
-
-    float relative_velocity[3]; //!< Object relative velocity xyz component (m/s)
-    float absolute_velocity[3]; //!< Object absolute velocity xyz component (m/s)
-    float acceleration[3];      //!< Object relative acceleration xyz component (m/s^2)
-
-    float location_cov[9];       //!< Object position uncertainty matrix
-    float velocity_cov[9];       //!< Object velocity uncertainty matrix
-    float acceleration_cov[9];   //!< Object acceleration uncertainty matrix
-    char tracking_confidence;    //!< Object tracking confidence
-    char is_detection;           //!< Whether it is a real detection target, 0 means
-                                 //!< complement object, 1 means real object
-    char reserved[2];            // fill in 　4bytes
-    float utm_heading;           // WGS84 detects object heading angle (angle with true north)
-    float rect_center_WGS84_lon; //!< WGS84 detection center longitude
-    float rect_center_WGS84_lat; //!< WGS84 detection center latitude
-    float rect_center_WGS84_ele; //!< WGS84 detection center altitude
-} HS_Object3D_Data;
-#pragma pack()
-
-struct HS_Object3D_Object {
-    OBJ_TYPE type;
-    HS_Object3D_Data data;
-};
-
-struct HS_Object3D_Object_List {
-    int valid_size;                       //!< Total number of objects
-    std::vector<HS_Object3D_Object> data; //!< Object data array
-};
-
 class PandarGeneral_Internal {
   public:
     /**
@@ -306,10 +236,8 @@ class PandarGeneral_Internal {
     PandarGeneral_Internal(
         std::string device_ip,
         uint16_t lidar_port,
-        uint16_t lidar_algorithm_port,
         uint16_t gps_port,
         std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
-        std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
         int tz,
@@ -352,65 +280,6 @@ class PandarGeneral_Internal {
 
     int Start();
     void Stop();
-
-    /*
-    @Description：Udp byte stream analysis function
-    @Params     ：app_data_buff, Byte stream received by udp packet
-    @Params     ：data_length，  the total length of the byte stream
-    @Params     ：Object_Recv_Sample， the structure used to store data
-    @Return     ： 0 -> parsed successfully
-    @Return     ：-1 -> Null pointer or UDP packet is abnormal
-    @Return     ：-2 ->The data length does not meet the requirements
-    */
-    int DecodeUdpData(
-        unsigned char *app_data_buff,
-        int data_length,
-        HS_Object3D_Object_List *Object_Recv_Sample);
-
-    /**
-     * @brief get major version.
-     * @Return   ： major version
-     */
-    int getMajorVersion();
-
-    /**
-     * @brief get minor version.
-     * @Return   ： minor version
-     */
-    int getMinorVersion();
-
-  private:
-    /**
-     * @brief get protocol version from LiDAR.
-     */
-    void getProtocolVersion();
-
-    /**
-     * @brief init offset by protocol version.
-     */
-    void initOffsetByProtocolVersion();
-
-    /**
-     * @brief start receive packet from LiDAR.
-     */
-    void recvAlgorithmPacket();
-
-    /**
-     * @brief start parse packet from LiDAR.
-     */
-    void ProcessAlgorithmPacket();
-
-    /**
-     * @brief push algorithm packet data to list.
-     * @Params     ：packet, data packet
-     */
-    void pushAlgorithmData(PandarPacket packet);
-
-    /**
-     * @brief pop algorithm packet data from list.
-     * @Params     ：packet, data packet
-     */
-    int popAlgorithmData(PandarPacket *packet);
 
   private:
     void Init();
@@ -458,21 +327,6 @@ class PandarGeneral_Internal {
     int start_angle_;
     std::string m_sTimestampType;
     double m_dPktTimestamp;
-    uint16_t m_u16LidarAlgorithmPort;
-    pthread_mutex_t m_mutexAlgorithmListLock;
-    sem_t m_semAlgorithmList;
-    std::thread *m_threadLidarAlgorithmRecv;
-    std::thread *m_threadLidarAlgorithmProcess;
-    bool m_bEnableLidarAlgorithmRecvThread;
-    bool m_bEnableLidarAlgorithmProcessThread;
-    bool m_bGetVersion;
-    int m_iMajorVersion;
-    int m_iMinorVersion;
-    int m_iHeaderSize;
-    int m_iRegularInfoLen;
-    std::list<PandarPacket> m_listAlgorithmPacket;
-    std::shared_ptr<Input> m_spAlgorithmPktInput;
-    std::function<void(HS_Object3D_Object_List *)> m_fAlgorithmCallback;
 
     std::list<struct PandarPacket> lidar_packets_;
 

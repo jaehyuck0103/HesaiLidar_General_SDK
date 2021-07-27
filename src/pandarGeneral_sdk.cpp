@@ -24,10 +24,8 @@ constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
 PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
     const uint16_t lidar_port,
-    uint16_t lidar_algorithm_port,
     uint16_t gps_port,
     std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
-    std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
@@ -39,10 +37,8 @@ PandarGeneralSDK::PandarGeneralSDK(
     internal_ = std::make_unique<PandarGeneral_Internal>(
         device_ip,
         lidar_port,
-        lidar_algorithm_port,
         gps_port,
         pcl_callback,
-        algorithm_callback,
         gps_callback,
         start_angle,
         tz,
@@ -98,9 +94,6 @@ void PandarGeneralSDK::Start() {
     internal_->Start();
 }
 void PandarGeneralSDK::Stop() { internal_->Stop(); }
-
-int PandarGeneralSDK::getMajorVersion() { return internal_->getMajorVersion(); }
-int PandarGeneralSDK::getMinorVersion() { return internal_->getMinorVersion(); }
 
 bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
 

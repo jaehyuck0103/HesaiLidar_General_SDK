@@ -71,10 +71,8 @@ static std::vector<std::vector<PPoint>> PointCloudList(128);
 PandarGeneral_Internal::PandarGeneral_Internal(
     std::string device_ip,
     uint16_t lidar_port,
-    uint16_t lidar_algorithm_port,
     uint16_t gps_port,
     std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
-    std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
@@ -107,26 +105,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     m_sTimestampType = timestampType;
     m_dPktTimestamp = 0.0f;
 
-    pthread_mutex_init(&m_mutexAlgorithmListLock, NULL);
-    sem_init(&m_semAlgorithmList, 0, 0);
-    m_threadLidarAlgorithmRecv = NULL;
-    m_threadLidarAlgorithmProcess = NULL;
-    m_fAlgorithmCallback = NULL;
-    m_bEnableLidarAlgorithmRecvThread = false;
-    m_bEnableLidarAlgorithmProcessThread = false;
-    m_bGetVersion = false;
-    m_iMajorVersion = 0;
-    m_iMinorVersion = 0;
-    m_iHeaderSize = 0;
-    m_iRegularInfoLen = 0;
-    m_u16LidarAlgorithmPort = 0;
-    if (0 != lidar_algorithm_port) {
-        m_u16LidarAlgorithmPort = lidar_algorithm_port;
-        m_spAlgorithmPktInput.reset(new Input(m_u16LidarAlgorithmPort, 0));
-    }
-    if (NULL != algorithm_callback) {
-        m_fAlgorithmCallback = algorithm_callback;
-    }
     Init();
 }
 
@@ -586,22 +564,11 @@ int PandarGeneral_Internal::Start() {
             std::placeholders::_2,
             std::placeholders::_3));
     }
-
-    if (0 != m_u16LidarAlgorithmPort) {
-        m_bEnableLidarAlgorithmRecvThread = true;
-        m_bEnableLidarAlgorithmProcessThread = true;
-        m_threadLidarAlgorithmProcess =
-            new std::thread(std::bind(&PandarGeneral_Internal::ProcessAlgorithmPacket, this));
-        m_threadLidarAlgorithmRecv =
-            new std::thread(std::bind(&PandarGeneral_Internal::recvAlgorithmPacket, this));
-    }
 }
 
 void PandarGeneral_Internal::Stop() {
     enable_lidar_recv_thr_ = false;
     enable_lidar_process_thr_ = false;
-    m_bEnableLidarAlgorithmRecvThread = false;
-    m_bEnableLidarAlgorithmProcessThread = false;
 
     if (lidar_process_thr_) {
         lidar_process_thr_->join();
@@ -618,19 +585,6 @@ void PandarGeneral_Internal::Stop() {
     if (pcap_reader_ != NULL) {
         pcap_reader_->stop();
     }
-
-    if (m_bEnableLidarAlgorithmRecvThread) {
-        m_threadLidarAlgorithmRecv->join();
-        delete m_threadLidarAlgorithmRecv;
-        m_threadLidarAlgorithmRecv = NULL;
-    }
-
-    if (m_bEnableLidarAlgorithmProcessThread) {
-        m_threadLidarAlgorithmProcess->join();
-        delete m_threadLidarAlgorithmProcess;
-        m_threadLidarAlgorithmProcess = NULL;
-    }
-    m_listAlgorithmPacket.clear();
 
     return;
 }
@@ -1695,206 +1649,4 @@ void PandarGeneral_Internal::EmitBackMessege(
             PointCloudList[i].clear();
         }
     }
-}
-
-void PandarGeneral_Internal::recvAlgorithmPacket() {
-    while (m_bEnableLidarAlgorithmRecvThread) {
-        PandarPacket pkt;
-        int rc = m_spAlgorithmPktInput->getPacket(&pkt);
-        if (0 == rc) {
-            pushAlgorithmData(pkt);
-        }
-    }
-}
-
-void PandarGeneral_Internal::ProcessAlgorithmPacket() {
-    getProtocolVersion();
-    initOffsetByProtocolVersion();
-    HS_Object3D_Object_List objectRecvList;
-    int totalPacketOfOneFrame = 0;
-    int packetNumber = 0;
-    while (m_threadLidarAlgorithmProcess) {
-
-        PandarPacket packet;
-        if (0 != popAlgorithmData(&packet)) {
-            continue;
-        }
-        totalPacketOfOneFrame = packet.data[30];
-        packetNumber = packet.data[31];
-        // printf("totalpacket: %d,packetnumber: %d\n",totalPacketOfOneFrame,
-        // packetNumber);
-        DecodeUdpData(packet.data, packet.size, &objectRecvList);
-        if (((packetNumber + 1) == totalPacketOfOneFrame) ||
-            (totalPacketOfOneFrame == 0)) { // enough packet or empty packet
-            m_fAlgorithmCallback(&objectRecvList);
-            objectRecvList.valid_size = 0;
-            objectRecvList.data.clear();
-        }
-    }
-}
-
-void PandarGeneral_Internal::getProtocolVersion() {
-    while (!m_bGetVersion) {
-        PandarPacket packet;
-        if (0 != popAlgorithmData(&packet)) {
-            continue;
-        }
-        m_iMajorVersion = packet.data[3];
-        m_iMinorVersion = packet.data[2];
-        m_bGetVersion = true;
-        printf("protocol version: %d.%d \n", m_iMajorVersion, m_iMinorVersion);
-    }
-}
-
-int PandarGeneral_Internal::getMajorVersion() { return m_iMajorVersion; }
-
-int PandarGeneral_Internal::getMinorVersion() { return m_iMinorVersion; }
-
-void PandarGeneral_Internal::initOffsetByProtocolVersion() {
-    if (0 == (m_iMinorVersion % 2)) {
-        m_iHeaderSize = HEADER_EXTERNAL_LEN;
-    } else {
-        m_iHeaderSize = HEADER_INTERNAL_LEN;
-    }
-
-    if ((2 == m_iMajorVersion) && ((0 == m_iMinorVersion) || (1 == m_iMinorVersion))) {
-        m_iRegularInfoLen = REGULAR_INFO_LEN - WGS84_LEN;
-    } else if ((2 == m_iMajorVersion) && ((2 == m_iMinorVersion) || (3 == m_iMinorVersion))) {
-        m_iRegularInfoLen = REGULAR_INFO_LEN;
-    } else {
-        printf("version error: %d.%d \n", m_iMajorVersion, m_iMinorVersion);
-    }
-}
-
-void PandarGeneral_Internal::pushAlgorithmData(PandarPacket packet) {
-    pthread_mutex_lock(&m_mutexAlgorithmListLock);
-    m_listAlgorithmPacket.push_back(packet);
-    sem_post(&m_semAlgorithmList);
-    pthread_mutex_unlock(&m_mutexAlgorithmListLock);
-}
-
-int PandarGeneral_Internal::popAlgorithmData(PandarPacket *packet) {
-    struct timespec ts;
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-        printf("get time error\n");
-        return -1;
-    }
-    ts.tv_sec += 1;
-    if (sem_timedwait(&m_semAlgorithmList, &ts) == -1) {
-        return -1;
-    }
-    pthread_mutex_lock(&m_mutexAlgorithmListLock);
-    *packet = m_listAlgorithmPacket.front();
-    m_listAlgorithmPacket.pop_front();
-    pthread_mutex_unlock(&m_mutexAlgorithmListLock);
-    return 0;
-}
-
-int PandarGeneral_Internal::DecodeUdpData(
-    unsigned char *app_data_buff,
-    int data_length,
-    HS_Object3D_Object_List *Object_Recv_Sample) {
-    // 1.Null pointer exception or data corruption
-    if (NULL == app_data_buff || NULL == Object_Recv_Sample ||
-        data_length < m_iHeaderSize + CRC_LEN) {
-        printf("Empty pointer or broken data error.\n");
-        return -1;
-    }
-
-    // 2.Handling empty packages, only including the header
-    if (data_length == m_iHeaderSize + CRC_LEN) {
-        Object_Recv_Sample->valid_size = 0;
-        // printf("Empty package detected\n");
-        return 0;
-    }
-
-    // 3. Less than one data in the packet
-    if (data_length <
-        m_iHeaderSize + INFO_HEAD_LEN + m_iRegularInfoLen + INFO_TAIL_LEN + CRC_LEN) {
-        printf("Data length error\n");
-        return -2;
-    }
-
-    // 4.Extract the data in the package
-    data_length = data_length - CRC_LEN - INFO_TAIL_LEN; // Ignore the last 8bytes of data
-
-    int type = 0;
-    int index = m_iHeaderSize + INFO_HEAD_LEN;
-    int object_num = Object_Recv_Sample->valid_size;
-    HS_Object3D_Data *help_ptr = NULL;
-    struct tm *tm_now = {0};
-    time_t time_tmp = 0;
-
-    while (index < data_length) {
-        type = app_data_buff[index];
-        index += 1;
-        Object_Recv_Sample->valid_size = app_data_buff[index];
-        index += 2; // Skip the single box attribute size field
-
-        for (size_t i = object_num; i < Object_Recv_Sample->valid_size + object_num; i++) {
-            // printf("total: %d,object_num:
-            // %d\n",Object_Recv_Sample->valid_size,object_num);
-            HS_Object3D_Object info_detection;
-            memcpy(&info_detection.data.id, app_data_buff + index, 4); // index += 4;
-            info_detection.type = OBJ_TYPE(type);
-            help_ptr = reinterpret_cast<HS_Object3D_Data *>(app_data_buff + index);
-            // Timestamp processing, convert the 8-byte timestamp in help_ptr into a
-            // structure of year, month, day, hour, minute and second
-            // memcpy(&time_tmp, app_data_buff+index, 8);
-            // time_tmp /= 1000000000;
-            // tm_now = localtime(&time_tmp);
-            // help_ptr->timestamp.year = tm_now->tm_year + 1900;
-            // help_ptr->timestamp.month = tm_now->tm_mon + 1;
-            // help_ptr->timestamp.day = tm_now->tm_mday;
-            // help_ptr->timestamp.hour = tm_now->tm_hour;
-            // help_ptr->timestamp.minute = tm_now->tm_min;
-            // help_ptr->timestamp.second = tm_now->tm_sec;
-
-            info_detection.data.timestamp = help_ptr->timestamp;
-            info_detection.data.rect_x = help_ptr->rect_x;
-            info_detection.data.rect_y = help_ptr->rect_y;
-            info_detection.data.rect_z = help_ptr->rect_z;
-            info_detection.data.rect_center_x = help_ptr->rect_center_x;
-            info_detection.data.rect_center_y = help_ptr->rect_center_y;
-            info_detection.data.rect_center_z = help_ptr->rect_center_z;
-            for (size_t i = 0; i < 4; i++) {
-                if (i == 3) {
-                    info_detection.data.yaw[i] = help_ptr->yaw[i];
-                    break;
-                }
-                info_detection.data.yaw[i] = help_ptr->yaw[i];
-                info_detection.data.relative_velocity[i] = help_ptr->relative_velocity[i];
-                info_detection.data.absolute_velocity[i] = help_ptr->absolute_velocity[i];
-                info_detection.data.acceleration[i] = help_ptr->acceleration[i];
-            }
-            for (size_t i = 0; i < 9; i++) {
-                info_detection.data.acceleration_cov[i] = help_ptr->acceleration_cov[i];
-                info_detection.data.location_cov[i] = help_ptr->location_cov[i];
-                info_detection.data.velocity_cov[i] = help_ptr->velocity_cov[i];
-            }
-            info_detection.data.tracking_confidence = help_ptr->tracking_confidence;
-            info_detection.data.is_detection = help_ptr->is_detection;
-
-            if ((2 == m_iMajorVersion) && ((2 == m_iMinorVersion) || (3 == m_iMinorVersion))) {
-                info_detection.data.utm_heading = help_ptr->utm_heading;
-                info_detection.data.rect_center_WGS84_lon = help_ptr->rect_center_WGS84_lon;
-                info_detection.data.rect_center_WGS84_lat = help_ptr->rect_center_WGS84_lat;
-                info_detection.data.rect_center_WGS84_ele = help_ptr->rect_center_WGS84_ele;
-            }
-            index = index + m_iRegularInfoLen; // Excluding the id (4 bytes), the single
-                                               // box attribute length is 196 or 212 bytes
-            Object_Recv_Sample->data.push_back(info_detection);
-
-            // The data length does not meet the requirements, and there is a problem
-            // with the incoming data
-            if (index > data_length) {
-                printf("Data length error\n");
-                return -2;
-            }
-        }
-        // Box count
-        object_num += Object_Recv_Sample->valid_size;
-    }
-    Object_Recv_Sample->valid_size = object_num;
-    return object_num;
 }

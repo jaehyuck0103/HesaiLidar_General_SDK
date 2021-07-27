@@ -39,10 +39,8 @@ class PandarGeneralSDK {
     PandarGeneralSDK(
         std::string device_ip,
         const uint16_t lidar_port,
-        uint16_t lidar_algorithm_port,
         const uint16_t gps_port,
         std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
-        std::function<void(HS_Object3D_Object_List *)> algorithm_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
         int tz,
@@ -76,9 +74,6 @@ class PandarGeneralSDK {
     std::string GetLidarCalibration();
     void Start();
     void Stop();
-
-    int getMajorVersion();
-    int getMinorVersion();
 
   private:
     std::unique_ptr<PandarGeneral_Internal> internal_;
