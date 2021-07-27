@@ -97,24 +97,8 @@
      HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
 
 /**
- * Pandar20
+ *
  */
-#define HS_LIDAR_L20_HEAD_SIZE (8)
-#define HS_LIDAR_L20_BLOCK_NUMBER (20)
-#define HS_LIDAR_L20_BLOCK_HEADER_AZIMUTH (2)
-#define HS_LIDAR_L20_UNIT_NUM (20)
-#define HS_LIDAR_L20_UNIT_SIZE (3)
-#define HS_LIDAR_L20_BLOCK_SIZE                                                                   \
-    (HS_LIDAR_L20_UNIT_SIZE * HS_LIDAR_L20_UNIT_NUM + HS_LIDAR_L20_BLOCK_HEADER_AZIMUTH)
-#define HS_LIDAR_L20_TIMESTAMP_SIZE (4)
-#define HS_LIDAR_L20_ECHO_SIZE (1)
-#define HS_LIDAR_L20_FACTORY_SIZE (1)
-#define HS_LIDAR_L20_RESERVED_SIZE (8)
-#define HS_LIDAR_L20_ENGINE_VELOCITY (2)
-#define HS_LIDAR_L20_BLOCK_PACKET_BODY_SIZE (HS_LIDAR_L20_BLOCK_SIZE * HS_LIDAR_L20_BLOCK_NUMBER)
-#define HS_LIDAR_L20_PACKET_TAIL_SIZE (22)
-#define HS_LIDAR_L20_PACKET_SIZE                                                                  \
-    (HS_LIDAR_L20_HEAD_SIZE + HS_LIDAR_L20_BLOCK_PACKET_BODY_SIZE + HS_LIDAR_L20_PACKET_TAIL_SIZE)
 
 #define GPS_PACKET_SIZE (512)
 #define GPS_PACKET_FLAG_SIZE (2)
@@ -178,36 +162,6 @@ struct HS_LIDAR_L64_Packet {
     unsigned char addtime[6];
 };
 /***************Pandar64****************************/
-
-/************Pandar20A/B*******************************/
-struct HS_LIDAR_L20_Header {
-    unsigned short sob = 0; // 0xFFEE 2bytes
-    char chLaserNumber = 0; // laser number 1byte
-    char chBlockNumber = 0; // block number 1byte
-    char chReturnType = 0;  // return mode 1 byte  when dual return 0-Single Return
-                            // 1-The first block is the 1 st return.
-                            // 2-The first block is the 2 nd return
-    char chDisUnit = 0;     // Distance unit, 6mm/5mm/4mm
-};
-
-struct HS_LIDAR_L20_Unit {
-    double distance;
-    unsigned short intensity;
-};
-
-struct HS_LIDAR_L20_Block {
-    unsigned short azimuth;
-    HS_LIDAR_L20_Unit units[HS_LIDAR_L20_UNIT_NUM];
-};
-
-struct HS_LIDAR_L20_Packet {
-    HS_LIDAR_L20_Header header;
-    HS_LIDAR_L20_Block blocks[HS_LIDAR_L20_BLOCK_NUMBER];
-    unsigned int timestamp; // ms
-    unsigned int echo;
-    unsigned char addtime[6];
-};
-/************Pandar20A/B*******************************/
 
 struct PandarGPS {
     uint16_t flag;
@@ -289,7 +243,6 @@ class PandarGeneral_Internal {
     void PushLidarData(PandarPacket packet);
     int ParseRawData(Pandar40PPacket *packet, const uint8_t *buf, const int len);
     int ParseL64Data(HS_LIDAR_L64_Packet *packet, const uint8_t *recvbuf, const int len);
-    int ParseL20Data(HS_LIDAR_L20_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseQTData(HS_LIDAR_QT_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseXTData(HS_LIDAR_XT_Packet *packet, const uint8_t *recvbuf, const int len);
 
@@ -297,11 +250,6 @@ class PandarGeneral_Internal {
     void CalcPointXYZIT(Pandar40PPacket *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
     void CalcL64PointXYZIT(
         HS_LIDAR_L64_Packet *pkt,
-        int blockid,
-        char chLaserNumber,
-        std::shared_ptr<PPointCloud> cld);
-    void CalcL20PointXYZIT(
-        HS_LIDAR_L20_Packet *pkt,
         int blockid,
         char chLaserNumber,
         std::shared_ptr<PPointCloud> cld);
@@ -330,7 +278,7 @@ class PandarGeneral_Internal {
 
     std::list<struct PandarPacket> lidar_packets_;
 
-    std::shared_ptr<Input> input_;
+    std::unique_ptr<Input> input_;
     std::function<void(std::shared_ptr<PPointCloud> cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
 
@@ -349,11 +297,6 @@ class PandarGeneral_Internal {
     float block40OffsetSingle_[BLOCKS_PER_PACKET];
     float block40OffsetDual_[BLOCKS_PER_PACKET];
     float laser40Offset_[LASER_COUNT];
-
-    float block20OffsetSingle_[HS_LIDAR_L20_BLOCK_NUMBER];
-    float block20OffsetDual_[HS_LIDAR_L20_BLOCK_NUMBER];
-    float laser20AOffset_[HS_LIDAR_L20_UNIT_NUM];
-    float laser20BOffset_[HS_LIDAR_L20_UNIT_NUM];
 
     float blockQTOffsetSingle_[HS_LIDAR_QT_BLOCK_NUMBER];
     float blockQTOffsetDual_[HS_LIDAR_QT_BLOCK_NUMBER];
