@@ -33,7 +33,7 @@ static const float pandar40p_elev_angle_map[] = {
     -3.0f, -3.33f, -3.67f, -4.0f,  -4.33f, -4.67f, -5.0f,  -5.33f, -5.67f, -6.0f,
     -7.0f, -8.0f,  -9.0f,  -10.0f, -11.0f, -12.0f, -13.0f, -14.0f, -19.0f, -25.0f};
 
-static const float pandarGeneral_elev_angle_map[] = {
+static const float pandar64_elev_angle_map[] = {
     14.882f,  11.032f, 8.059f,   5.057f,  3.04f,   2.028f,  1.86f,   1.688f,  1.522f,   1.351f,
     1.184f,   1.013f,  0.846f,   0.675f,  0.508f,  0.337f,  0.169f,  0.0f,    -0.169f,  -0.337f,
     -0.508f,  -0.675f, -0.845f,  -1.013f, -1.184f, -1.351f, -1.522f, -1.688f, -1.86f,   -2.028f,
@@ -49,7 +49,7 @@ static const float pandar40p_horizatal_azimuth_offset_map[] = {
     -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f, 3.125f,  -5.208f, -1.042f,
     -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f};
 
-static const float pandarGeneral_horizatal_azimuth_offset_map[] = {
+static const float pandar64_horizatal_azimuth_offset_map[] = {
     -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f,
     -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,
     5.208f,  -5.208f, -3.125f, -1.042f, 1.042f,  3.125f,  5.208f,  -5.208f, -3.125f, -1.042f,
@@ -466,9 +466,8 @@ void PandarGeneral_Internal::Init() {
 
     if (m_sLidarType == "Pandar64") {
         for (int i = 0; i < HS_LIDAR_L64_UNIT_NUM; i++) {
-            General_elev_angle_map_[i] = pandarGeneral_elev_angle_map[i];
-            General_horizatal_azimuth_offset_map_[i] =
-                pandarGeneral_horizatal_azimuth_offset_map[i];
+            General_elev_angle_map_[i] = pandar64_elev_angle_map[i];
+            General_horizatal_azimuth_offset_map_[i] = pandar64_horizatal_azimuth_offset_map[i];
         }
     }
 
@@ -575,7 +574,7 @@ int PandarGeneral_Internal::Start() {
     enable_lidar_recv_thr_ = true;
     enable_lidar_process_thr_ = true;
     lidar_process_thr_ =
-        new std::thread(std::bind(&PandarGeneral_Internal::ProcessLiarPacket, this));
+        new std::thread(std::bind(&PandarGeneral_Internal::ProcessLidarPacket, this));
 
     if (connect_lidar_) {
         lidar_recv_thr_ = new std::thread(std::bind(&PandarGeneral_Internal::RecvTask, this));
@@ -655,7 +654,7 @@ void PandarGeneral_Internal::RecvTask() {
             continue;
         }
 
-        PushLiDARData(pkt);
+        PushLidarData(pkt);
     }
 }
 
@@ -665,11 +664,11 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
         memcpy(pkt.data, buf, len);
         pkt.size = len;
         pkt.stamp = timestamp;
-        PushLiDARData(pkt);
+        PushLidarData(pkt);
     }
 }
 
-void PandarGeneral_Internal::ProcessLiarPacket() {
+void PandarGeneral_Internal::ProcessLidarPacket() {
     // LOG_FUNC();
     struct timespec ts;
     int ret = 0;
@@ -890,7 +889,7 @@ void PandarGeneral_Internal::ProcessLiarPacket() {
     }
 }
 
-void PandarGeneral_Internal::PushLiDARData(PandarPacket packet) {
+void PandarGeneral_Internal::PushLidarData(PandarPacket packet) {
     pthread_mutex_lock(&lidar_lock_);
     lidar_packets_.push_back(packet);
     sem_post(&lidar_sem_);
@@ -1013,7 +1012,7 @@ int PandarGeneral_Internal::ParseL64Data(
     index += HS_LIDAR_L64_HEAD_SIZE;
 
     if (packet->header.sob != 0xEEFF) {
-        printf("Error Start of Packet!\n");
+        std::cout << "Error Start of Packet!\n";
         return -1;
     }
 

@@ -131,104 +131,85 @@
 
 #define MAX_LASER_NUM (256)
 
-struct Pandar40PUnit_s {
+struct Pandar40PUnit {
     uint8_t intensity;
     double distance;
 };
-typedef struct Pandar40PUnit_s Pandar40PUnit;
 
-struct Pandar40PBlock_s {
+struct Pandar40PBlock {
     uint16_t azimuth;
     uint16_t sob;
     Pandar40PUnit units[LASER_COUNT];
 };
-typedef struct Pandar40PBlock_s Pandar40PBlock;
 
-struct Pandar40PPacket_s {
+struct Pandar40PPacket {
     Pandar40PBlock blocks[BLOCKS_PER_PACKET];
     struct tm t;
     uint32_t usec;
     int echo;
 };
-typedef struct Pandar40PPacket_s Pandar40PPacket;
 
 /************Pandar64*******************************/
-typedef struct HS_LIDAR_L64_Header_s {
-    unsigned short sob; // 0xFFEE 2bytes
-    char chLaserNumber; // laser number 1byte
-    char chBlockNumber; // block number 1byte
-    char chReturnType;  // return mode 1 byte  when dual return 0-Single Return
-                        // 1-The first block is the 1 st return.
-                        // 2-The first block is the 2 nd return
-    char chDisUnit;     // Distance unit, 6mm/5mm/4mm
-  public:
-    HS_LIDAR_L64_Header_s() {
-        sob = 0;
-        chLaserNumber = 0;
-        chBlockNumber = 0;
-        chReturnType = 0;
-        chDisUnit = 0;
-    }
-} HS_LIDAR_L64_Header;
+struct HS_LIDAR_L64_Header {
+    unsigned short sob = 0; // 0xFFEE 2bytes
+    char chLaserNumber = 0; // laser number 1byte
+    char chBlockNumber = 0; // block number 1byte
+    char chReturnType = 0;  // return mode 1 byte  when dual return 0-Single Return
+                            // 1-The first block is the 1 st return.
+                            // 2-The first block is the 2 nd return
+    char chDisUnit = 0;     // Distance unit, 6mm/5mm/4mm
+};
 
-typedef struct HS_LIDAR_L64_Unit_s {
+struct HS_LIDAR_L64_Unit {
     double distance;
     unsigned short intensity;
-} HS_LIDAR_L64_Unit;
+};
 
-typedef struct HS_LIDAR_L64_Block_s {
+struct HS_LIDAR_L64_Block {
     unsigned short azimuth; // packet angle  ,Azimuth = RealAzimuth * 100
     HS_LIDAR_L64_Unit units[HS_LIDAR_L64_UNIT_NUM];
-} HS_LIDAR_L64_Block;
+};
 
-typedef struct HS_LIDAR_L64_Packet_s {
+struct HS_LIDAR_L64_Packet {
     HS_LIDAR_L64_Header header;
     HS_LIDAR_L64_Block blocks[HS_LIDAR_L64_BLOCK_NUMBER_7];
     unsigned int timestamp; // ms
     unsigned int echo;
     unsigned char addtime[6];
-} HS_LIDAR_L64_Packet;
+};
 /***************Pandar64****************************/
 
 /************Pandar20A/B*******************************/
-typedef struct HS_LIDAR_L20_Header_s {
-    unsigned short sob; // 0xFFEE 2bytes
-    char chLaserNumber; // laser number 1byte
-    char chBlockNumber; // block number 1byte
-    char chReturnType;  // return mode 1 byte  when dual return 0-Single Return
-                        // 1-The first block is the 1 st return.
-                        // 2-The first block is the 2 nd return
-    char chDisUnit;     // Distance unit, 6mm/5mm/4mm
-  public:
-    HS_LIDAR_L20_Header_s() {
-        sob = 0;
-        chLaserNumber = 0;
-        chBlockNumber = 0;
-        chReturnType = 0;
-        chDisUnit = 0;
-    }
-} HS_LIDAR_L20_Header;
+struct HS_LIDAR_L20_Header {
+    unsigned short sob = 0; // 0xFFEE 2bytes
+    char chLaserNumber = 0; // laser number 1byte
+    char chBlockNumber = 0; // block number 1byte
+    char chReturnType = 0;  // return mode 1 byte  when dual return 0-Single Return
+                            // 1-The first block is the 1 st return.
+                            // 2-The first block is the 2 nd return
+    char chDisUnit = 0;     // Distance unit, 6mm/5mm/4mm
+};
 
-typedef struct HS_LIDAR_L20_Unit_s {
+struct HS_LIDAR_L20_Unit {
     double distance;
     unsigned short intensity;
-} HS_LIDAR_L20_Unit;
+};
 
-typedef struct HS_LIDAR_L20_Block_s {
+struct HS_LIDAR_L20_Block {
     unsigned short azimuth;
     HS_LIDAR_L20_Unit units[HS_LIDAR_L20_UNIT_NUM];
-} HS_LIDAR_L20_Block;
+};
 
-typedef struct HS_LIDAR_L20_Packet_s {
+struct HS_LIDAR_L20_Packet {
     HS_LIDAR_L20_Header header;
     HS_LIDAR_L20_Block blocks[HS_LIDAR_L20_BLOCK_NUMBER];
     unsigned int timestamp; // ms
     unsigned int echo;
     unsigned char addtime[6];
-} HS_LIDAR_L20_Packet;
+};
 /************Pandar20A/B*******************************/
 
-struct PandarGPS_s {
+struct PandarGPS {
     uint16_t flag;
     uint16_t year;
     uint16_t month;
@@ -238,7 +219,6 @@ struct PandarGPS_s {
     uint16_t hour;
     uint32_t fineTime;
 };
-typedef struct PandarGPS_s PandarGPS;
 
 #define ROTATION_MAX_UNITS (36001)
 
@@ -436,8 +416,8 @@ class PandarGeneral_Internal {
     void Init();
     void RecvTask();
     void ProcessGps(const PandarGPS &gpsMsg);
-    void ProcessLiarPacket();
-    void PushLiDARData(PandarPacket packet);
+    void ProcessLidarPacket();
+    void PushLidarData(PandarPacket packet);
     int ParseRawData(Pandar40PPacket *packet, const uint8_t *buf, const int len);
     int ParseL64Data(HS_LIDAR_L64_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseL20Data(HS_LIDAR_L20_Packet *packet, const uint8_t *recvbuf, const int len);
@@ -494,7 +474,7 @@ class PandarGeneral_Internal {
     std::shared_ptr<Input> m_spAlgorithmPktInput;
     std::function<void(HS_Object3D_Object_List *)> m_fAlgorithmCallback;
 
-    std::list<struct PandarPacket_s> lidar_packets_;
+    std::list<struct PandarPacket> lidar_packets_;
 
     std::shared_ptr<Input> input_;
     std::function<void(std::shared_ptr<PPointCloud> cld, double timestamp)> pcl_callback_;
@@ -505,20 +485,8 @@ class PandarGeneral_Internal {
 
     uint16_t last_azimuth_;
 
-    float elev_angle_map_[LASER_COUNT];
-    float horizatal_azimuth_offset_map_[LASER_COUNT];
-
     float General_elev_angle_map_[MAX_LASER_NUM];
     float General_horizatal_azimuth_offset_map_[MAX_LASER_NUM];
-
-    float Pandar20_elev_angle_map_[HS_LIDAR_L20_UNIT_NUM];
-    float Pandar20_horizatal_azimuth_offset_map_[HS_LIDAR_L20_UNIT_NUM];
-
-    float PandarQT_elev_angle_map_[HS_LIDAR_QT_UNIT_NUM];
-    float PandarQT_horizatal_azimuth_offset_map_[HS_LIDAR_QT_UNIT_NUM];
-
-    float PandarXT_elev_angle_map_[HS_LIDAR_XT_UNIT_NUM];
-    float PandarXT_horizatal_azimuth_offset_map_[HS_LIDAR_XT_UNIT_NUM];
 
     float block64OffsetSingle_[HS_LIDAR_L64_BLOCK_NUMBER_6];
     float block64OffsetDual_[HS_LIDAR_L64_BLOCK_NUMBER_6];

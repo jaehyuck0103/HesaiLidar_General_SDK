@@ -14,21 +14,20 @@
  * limitations under the License.
  *****************************************************************************/
 
-#ifndef SRC_INPUT_H_
-#define SRC_INPUT_H_
+#pragma once
 
 #include <netinet/in.h>
 #include <stdio.h>
 #include <string>
 #include <unistd.h>
 
-#define ETHERNET_MTU (1500)
+constexpr int ETHERNET_MTU = 1500;
 
-typedef struct PandarPacket_s {
+struct PandarPacket {
     double stamp;
     uint8_t data[ETHERNET_MTU];
     uint32_t size;
-} PandarPacket;
+};
 
 class Input {
   public:
@@ -42,5 +41,3 @@ class Input {
     int socketForGPS;
     int socketNumber;
 };
-
-#endif // SRC_INPUT_H_
