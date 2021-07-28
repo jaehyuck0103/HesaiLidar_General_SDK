@@ -175,11 +175,11 @@ class PandarGeneral_Internal {
 
     uint16_t last_azimuth_;
 
-    float General_elev_angle_map_[MAX_LASER_NUM];
-    float General_horizatal_azimuth_offset_map_[MAX_LASER_NUM];
+    float elev_angle_map_[MAX_LASER_NUM];
+    float azimuth_offset_map_[MAX_LASER_NUM];
 
-    float block64OffsetSingle_[HS_LIDAR_L64_BLOCK_NUMBER_6];
-    float block64OffsetDual_[HS_LIDAR_L64_BLOCK_NUMBER_6];
+    float block64OffsetSingle_[HS_LIDAR_L64_BLOCK_NUMBER];
+    float block64OffsetDual_[HS_LIDAR_L64_BLOCK_NUMBER];
     float laser64Offset_[HS_LIDAR_L64_UNIT_NUM];
 
     float block40OffsetSingle_[HS_LIDAR_L40_BLOCKS_PER_PACKET];

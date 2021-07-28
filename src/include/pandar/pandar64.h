@@ -3,13 +3,10 @@
 #include <cstdint>
 
 #define HS_LIDAR_L64_TIME_SIZE (6)
-// Each Packet have 8 byte
 #define HS_LIDAR_L64_HEAD_SIZE (8)
-// Block number 6 or 7
-#define HS_LIDAR_L64_BLOCK_NUMBER_6 (6)
-#define HS_LIDAR_L64_BLOCK_NUMBER_7 (7)
+#define HS_LIDAR_L64_BLOCK_NUMBER (6)
 
-// each block first 2 byte  is azimuth
+// each block first 2 byte is azimuth
 #define HS_LIDAR_L64_BLOCK_HEADER_AZIMUTH (2)
 // each block have  64 Unit
 #define HS_LIDAR_L64_UNIT_NUM (64)
@@ -27,28 +24,18 @@
 #define HS_LIDAR_L64_ENGINE_VELOCITY (2)
 
 // packet body size two type
-#define HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE                                                     \
-    (HS_LIDAR_L64_BLOCK_SIZE * HS_LIDAR_L64_BLOCK_NUMBER_6)
-#define HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE                                                     \
-    (HS_LIDAR_L64_BLOCK_SIZE * HS_LIDAR_L64_BLOCK_NUMBER_7)
+#define HS_LIDAR_L64_PACKET_BODY_SIZE (HS_LIDAR_L64_BLOCK_SIZE * HS_LIDAR_L64_BLOCK_NUMBER)
 
 // packet tail size
 #define HS_LIDAR_L64_PACKET_TAIL_SIZE (26)
 #define HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE (22)
 
 // total packet size two type,length: 1198 and 1392
-#define HS_LIDAR_L64_6PACKET_SIZE                                                                 \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_SIZE)
-#define HS_LIDAR_L64_7PACKET_SIZE                                                                 \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_SIZE)
+#define HS_LIDAR_L64_PACKET_SIZE                                                                  \
+    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_PACKET_BODY_SIZE + HS_LIDAR_L64_PACKET_TAIL_SIZE)
 
-#define HS_LIDAR_L64_6PACKET_WITHOUT_UDPSEQ_SIZE                                                  \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_6_BLOCK_PACKET_BODY_SIZE +                             \
-     HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
-#define HS_LIDAR_L64_7PACKET_WITHOUT_UDPSEQ_SIZE                                                  \
-    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_7_BLOCK_PACKET_BODY_SIZE +                             \
+#define HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE                                                   \
+    (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_PACKET_BODY_SIZE +                                     \
      HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
 
 struct HS_LIDAR_L64_Header {
@@ -73,7 +60,7 @@ struct HS_LIDAR_L64_Block {
 
 struct HS_LIDAR_L64_Packet {
     HS_LIDAR_L64_Header header;
-    HS_LIDAR_L64_Block blocks[HS_LIDAR_L64_BLOCK_NUMBER_7];
+    HS_LIDAR_L64_Block blocks[HS_LIDAR_L64_BLOCK_NUMBER];
     uint32_t timestamp;
     uint32_t echo;
     uint8_t addtime[6];

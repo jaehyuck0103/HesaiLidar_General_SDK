@@ -348,38 +348,37 @@ void PandarGeneral_Internal::Init() {
 
     if (m_sLidarType == "Pandar40P" || m_sLidarType == "Pandar40M") {
         for (int i = 0; i < HS_LIDAR_L40_LASER_COUNT; i++) {
-            General_elev_angle_map_[i] = pandar40p_elev_angle_map[i];
-            General_horizatal_azimuth_offset_map_[i] = pandar40p_horizatal_azimuth_offset_map[i];
+            elev_angle_map_[i] = pandar40p_elev_angle_map[i];
+            azimuth_offset_map_[i] = pandar40p_horizatal_azimuth_offset_map[i];
         }
     }
 
     if (m_sLidarType == "Pandar64") {
         for (int i = 0; i < HS_LIDAR_L64_UNIT_NUM; i++) {
-            General_elev_angle_map_[i] = pandar64_elev_angle_map[i];
-            General_horizatal_azimuth_offset_map_[i] = pandar64_horizatal_azimuth_offset_map[i];
+            elev_angle_map_[i] = pandar64_elev_angle_map[i];
+            azimuth_offset_map_[i] = pandar64_horizatal_azimuth_offset_map[i];
         }
     }
 
     if (m_sLidarType == "PandarQT") {
         for (int i = 0; i < HS_LIDAR_QT_UNIT_NUM; i++) {
-            General_elev_angle_map_[i] = pandarQT_elev_angle_map[i];
-            General_horizatal_azimuth_offset_map_[i] = pandarQT_horizatal_azimuth_offset_map[i];
+            elev_angle_map_[i] = pandarQT_elev_angle_map[i];
+            azimuth_offset_map_[i] = pandarQT_horizatal_azimuth_offset_map[i];
         }
     }
 
     if (m_sLidarType == "PandarXT-32") {
         for (int i = 0; i < HS_LIDAR_XT_UNIT_NUM; i++) {
-            General_elev_angle_map_[i] = pandarXT_elev_angle_map[i];
-            General_horizatal_azimuth_offset_map_[i] = pandarXT_horizatal_azimuth_offset_map[i];
+            elev_angle_map_[i] = pandarXT_elev_angle_map[i];
+            azimuth_offset_map_[i] = pandarXT_horizatal_azimuth_offset_map[i];
             laserXTOffset_[i] = laserXTOffset[i];
         }
     }
 
     if (m_sLidarType == "PandarXT-16") {
         for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
-            General_elev_angle_map_[i] = pandarXT_elev_angle_map[i * 2];
-            General_horizatal_azimuth_offset_map_[i] =
-                pandarXT_horizatal_azimuth_offset_map[i * 2];
+            elev_angle_map_[i] = pandarXT_elev_angle_map[i * 2];
+            azimuth_offset_map_[i] = pandarXT_horizatal_azimuth_offset_map[i * 2];
             laserXTOffset_[i] = laserXTOffset[i * 2];
         }
     }
@@ -437,8 +436,8 @@ int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
 
     for (int i = 0; i < lineCounter; ++i) {
         /* for all the laser offset */
-        General_elev_angle_map_[i] = elev_angle[i];
-        General_horizatal_azimuth_offset_map_[i] = azimuthOffset[i];
+        elev_angle_map_[i] = elev_angle[i];
+        azimuth_offset_map_[i] = azimuthOffset[i];
     }
 
     return 0;
@@ -585,9 +584,8 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
                 last_azimuth_ = pkt.blocks[i].azimuth;
             }
         } else if (
-            packet.size == HS_LIDAR_L64_6PACKET_SIZE || packet.size == HS_LIDAR_L64_7PACKET_SIZE ||
-            packet.size == HS_LIDAR_L64_6PACKET_WITHOUT_UDPSEQ_SIZE ||
-            packet.size == HS_LIDAR_L64_7PACKET_WITHOUT_UDPSEQ_SIZE) {
+            packet.size == HS_LIDAR_L64_PACKET_SIZE ||
+            packet.size == HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE) {
             HS_LIDAR_L64_Packet pkt;
             ret = ParseL64Data(&pkt, packet.data, packet.size);
 
@@ -806,9 +804,8 @@ int PandarGeneral_Internal::ParseL64Data(
     HS_LIDAR_L64_Packet *packet,
     const uint8_t *recvbuf,
     const int len) {
-    if (len != HS_LIDAR_L64_6PACKET_SIZE && len != HS_LIDAR_L64_7PACKET_SIZE &&
-        len != HS_LIDAR_L64_6PACKET_WITHOUT_UDPSEQ_SIZE &&
-        len != HS_LIDAR_L64_7PACKET_WITHOUT_UDPSEQ_SIZE && len != 1270) {
+    if (len != HS_LIDAR_L64_PACKET_SIZE && len != HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE &&
+        len != 1270) {
         std::cout << "packet size mismatch PandarGeneral_Internal " << len << "," << len
                   << std::endl;
         return -1;
@@ -1070,18 +1067,17 @@ void PandarGeneral_Internal::CalcL40PointXYZIT(
             continue;
         }
 
-        double xyDistance = unit.distance * cosf(degreeToRadian(General_elev_angle_map_[i]));
+        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
 
         point.x = static_cast<float>(
-            xyDistance * sinf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
+            xyDistance *
+            sinf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
         point.y = static_cast<float>(
-            xyDistance * cosf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
-        point.z =
-            static_cast<float>(unit.distance * sinf(degreeToRadian(General_elev_angle_map_[i])));
+            xyDistance *
+            cosf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
 
         point.intensity = unit.intensity;
 
@@ -1151,17 +1147,16 @@ void PandarGeneral_Internal::CalcL64PointXYZIT(
             continue;
         }
 
-        double xyDistance = unit.distance * cosf(degreeToRadian(General_elev_angle_map_[i]));
+        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
         point.x = static_cast<float>(
-            xyDistance * sinf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
+            xyDistance *
+            sinf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
         point.y = static_cast<float>(
-            xyDistance * cosf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
-        point.z =
-            static_cast<float>(unit.distance * sinf(degreeToRadian(General_elev_angle_map_[i])));
+            xyDistance *
+            cosf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
 
         point.intensity = unit.intensity;
 
@@ -1230,18 +1225,17 @@ void PandarGeneral_Internal::CalcQTPointXYZIT(
             continue;
         }
 
-        double xyDistance = unit.distance * cosf(degreeToRadian(General_elev_angle_map_[i]));
+        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
 
         point.x = static_cast<float>(
-            xyDistance * sinf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
+            xyDistance *
+            sinf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
         point.y = static_cast<float>(
-            xyDistance * cosf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
-        point.z =
-            static_cast<float>(unit.distance * sinf(degreeToRadian(General_elev_angle_map_[i])));
+            xyDistance *
+            cosf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
 
         point.intensity = unit.intensity;
 
@@ -1308,18 +1302,17 @@ void PandarGeneral_Internal::CalcXTPointXYZIT(
             continue;
         }
 
-        double xyDistance = unit.distance * cosf(degreeToRadian(General_elev_angle_map_[i]));
+        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
 
         point.x = static_cast<float>(
-            xyDistance * sinf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
+            xyDistance *
+            sinf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
         point.y = static_cast<float>(
-            xyDistance * cosf(degreeToRadian(
-                             General_horizatal_azimuth_offset_map_[i] +
-                             (static_cast<double>(block->azimuth)) / 100.0)));
-        point.z =
-            static_cast<float>(unit.distance * sinf(degreeToRadian(General_elev_angle_map_[i])));
+            xyDistance *
+            cosf(degreeToRadian(
+                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
 
         point.intensity = unit.intensity;
 
