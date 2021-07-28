@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <ctime>
 
 #define HS_LIDAR_L40_SOB_SIZE (4)
 #define HS_LIDAR_L40_RAW_MEASURE_SIZE (3)
@@ -37,9 +36,9 @@ struct HS_LIDAR_L40_Block {
 
 struct HS_LIDAR_L40_Packet {
     HS_LIDAR_L40_Block blocks[HS_LIDAR_L40_BLOCKS_PER_PACKET];
-    tm t;
-    uint32_t usec;
+    uint32_t timestamp;
     int echo;
+    uint8_t addtime[6];
 };
 
 // elevation angle of each line for HS Line 40 Lidar, Line 1 - Line 40

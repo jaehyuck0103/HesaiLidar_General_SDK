@@ -740,7 +740,7 @@ void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
 
 int PandarGeneral_Internal::ParseL40Data(
     HS_LIDAR_L40_Packet *packet,
-    const uint8_t *buf,
+    const uint8_t *recvbuf,
     const int len) {
     if (len != HS_LIDAR_L40_PACKET_SIZE &&
         len != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
@@ -754,18 +754,18 @@ int PandarGeneral_Internal::ParseL40Data(
     for (int i = 0; i < HS_LIDAR_L40_BLOCKS_PER_PACKET; i++) {
         HS_LIDAR_L40_Block &block = packet->blocks[i];
 
-        block.sob = (buf[index] & 0xff) | ((buf[index + 1] & 0xff) << 8);
-        block.azimuth = (buf[index + 2] & 0xff) | ((buf[index + 3] & 0xff) << 8);
+        block.sob = (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
+        block.azimuth = (recvbuf[index + 2] & 0xff) | ((recvbuf[index + 3] & 0xff) << 8);
         index += HS_LIDAR_L40_SOB_SIZE;
         // 40x units
         for (int j = 0; j < HS_LIDAR_L40_LASER_COUNT; j++) {
             HS_LIDAR_L40_Unit &unit = block.units[j];
-            uint32_t range = (buf[index] & 0xff) | ((buf[index + 1] & 0xff) << 8);
+            uint32_t range = (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
 
             // distance is M.
             unit.distance =
                 (static_cast<double>(range)) * HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE;
-            unit.intensity = (buf[index + 2] & 0xff);
+            unit.intensity = (recvbuf[index + 2] & 0xff);
 
             // TODO(Philip.Pi): Filtering wrong data for LiDAR.
             if ((unit.distance == 0x010101 && unit.intensity == 0x0101) ||
@@ -782,33 +782,22 @@ int PandarGeneral_Internal::ParseL40Data(
 
     index += HS_LIDAR_L40_REVOLUTION_SIZE;
 
-    packet->usec = (buf[index] & 0xff) | (buf[index + 1] & 0xff) << 8 |
-                   ((buf[index + 2] & 0xff) << 16) | ((buf[index + 3] & 0xff) << 24);
-    packet->usec %= 1000000;
+    packet->timestamp = (recvbuf[index] & 0xff) | (recvbuf[index + 1] & 0xff) << 8 |
+                        ((recvbuf[index + 2] & 0xff) << 16) | ((recvbuf[index + 3] & 0xff) << 24);
 
     index += HS_LIDAR_L40_TIMESTAMP_SIZE;
-    packet->echo = buf[index] & 0xff;
+    packet->echo = recvbuf[index] & 0xff;
 
     index += HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE;
 
-    // parse the UTC Time.
+    packet->addtime[0] = recvbuf[index] & 0xff;
+    packet->addtime[1] = recvbuf[index + 1] & 0xff;
+    packet->addtime[2] = recvbuf[index + 2] & 0xff;
+    packet->addtime[3] = recvbuf[index + 3] & 0xff;
+    packet->addtime[4] = recvbuf[index + 4] & 0xff;
+    packet->addtime[5] = recvbuf[index + 5] & 0xff;
 
-    // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
-    // and mktime's year start from 1900 which is 0. so we need add 100 year.
-    packet->t.tm_year = (buf[index + 0] & 0xff) + 100;
-
-    // in case of time error
-    if (packet->t.tm_year >= 200) {
-        packet->t.tm_year -= 100;
-    }
-
-    // UTC's month start from 1, but mktime only accept month from 0.
-    packet->t.tm_mon = (buf[index + 1] & 0xff) - 1;
-    packet->t.tm_mday = buf[index + 2] & 0xff;
-    packet->t.tm_hour = buf[index + 3] & 0xff;
-    packet->t.tm_min = buf[index + 4] & 0xff;
-    packet->t.tm_sec = buf[index + 5] & 0xff;
-    packet->t.tm_isdst = 0;
+    index += HS_LIDAR_L40_UTC_TIME;
 
     return 0;
 }
@@ -1051,7 +1040,25 @@ void PandarGeneral_Internal::CalcL40PointXYZIT(
     std::shared_ptr<PPointCloud> cld) {
     HS_LIDAR_L40_Block *block = &pkt->blocks[blockid];
 
-    double unix_second = static_cast<double>(mktime(&pkt->t) + tz_second_);
+    tm tTm;
+    // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
+    // and mktime's year start from 1900 which is 0. so we need add 100 year.
+    tTm.tm_year = pkt->addtime[0] + 100;
+
+    // in case of time error
+    if (tTm.tm_year >= 200) {
+        tTm.tm_year -= 100;
+    }
+
+    // UTC's month start from 1, but mktime only accept month from 0.
+    tTm.tm_mon = pkt->addtime[1] - 1;
+    tTm.tm_mday = pkt->addtime[2];
+    tTm.tm_hour = pkt->addtime[3];
+    tTm.tm_min = pkt->addtime[4];
+    tTm.tm_sec = pkt->addtime[5];
+    tTm.tm_isdst = 0;
+
+    double unix_second = static_cast<double>(mktime(&tTm) + tz_second_);
 
     for (int i = 0; i < HS_LIDAR_L40_LASER_COUNT; ++i) {
         /* for all the units in a block */
@@ -1081,7 +1088,7 @@ void PandarGeneral_Internal::CalcL40PointXYZIT(
         if ("realtime" == m_sTimestampType) {
             point.timestamp = m_dPktTimestamp;
         } else {
-            point.timestamp = unix_second + (static_cast<double>(pkt->usec)) / 1000000.0;
+            point.timestamp = unix_second + (static_cast<double>(pkt->timestamp)) / 1000000.0;
 
             if (pkt->echo == 0x39) {
                 // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
