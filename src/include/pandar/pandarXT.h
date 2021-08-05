@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pandarGeneral_internal.h"
+
 #include <cstdint>
 
 // Head
@@ -28,37 +30,6 @@
 #define HS_LIDAR_XT16_UNIT_NUM (16)
 #define HS_LIDAR_XT16_PACKET_SIZE (568)
 
-#define HS_LIDAR_XT_MAJOR_VERSION (6)
-
-struct HS_LIDAR_XT_Header {
-    uint16_t sob = 0;            // 0xFFEE 2bytes
-    uint8_t chProtocolMajor = 0; // Protocol Version Major 1byte
-    uint8_t chProtocolMinor = 0; // Protocol Version Minor 1byte
-    uint8_t chLaserNumber = 0;   // laser number 1byte
-    uint8_t chBlockNumber = 0;   // block number 1byte
-    uint8_t chReturnType = 0;    // return mode 1 byte  when dual return 0-Single Return
-    uint8_t chDisUnit = 0;       // Distance unit, 4mm
-};
-
-struct HS_LIDAR_XT_Unit {
-    double distance;
-    uint16_t intensity;
-    uint16_t confidence;
-};
-
-struct HS_LIDAR_XT_Block {
-    uint16_t azimuth; // Azimuth = RealAzimuth * 100
-    HS_LIDAR_XT_Unit units[HS_LIDAR_XT_UNIT_NUM];
-};
-
-struct HS_LIDAR_XT_Packet {
-    HS_LIDAR_XT_Header header;
-    HS_LIDAR_XT_Block blocks[HS_LIDAR_XT_BLOCK_NUMBER];
-    uint32_t timestamp;
-    uint32_t echo;
-    uint8_t addtime[6];
-};
-
 const float pandarXT_elev_angle_map[] = {
     15.0f, 14.0f, 13.0f, 12.0f,  11.0f,  10.0f,  9.0f,   8.0f,   7.0f,   6.0f,  5.0f,
     4.0f,  3.0f,  2.0f,  1.0f,   0.0f,   -1.0f,  -2.0f,  -3.0f,  -4.0f,  -5.0f, -6.0f,
@@ -68,25 +39,6 @@ const float pandarXT_horizatal_azimuth_offset_map[] = {
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-const float blockXTOffsetDual[HS_LIDAR_XT_BLOCK_NUMBER] = {
-    3.28f - 50.0f * 3.0f,
-    3.28f - 50.0f * 3.0f,
-    3.28f - 50.0f * 2.0f,
-    3.28f - 50.0f * 2.0f,
-    3.28f - 50.0f * 1.0f,
-    3.28f - 50.0f * 1.0f,
-    3.28f - 50.0f * 0.0f,
-    3.28f - 50.0f * 0.0f};
-const float blockXTOffsetSingle[HS_LIDAR_XT_BLOCK_NUMBER] = {
-    3.28f - 50.0f * 7.0f,
-    3.28f - 50.0f * 6.0f,
-    3.28f - 50.0f * 5.0f,
-    3.28f - 50.0f * 4.0f,
-    3.28f - 50.0f * 3.0f,
-    3.28f - 50.0f * 2.0f,
-    3.28f - 50.0f * 1.0f,
-    3.28f - 50.0f * 0.0f};
 
 const float laserXTOffset[HS_LIDAR_XT_UNIT_NUM] = {
     1.512f * 0.0f + 0.28f,  1.512f * 1.0f + 0.28f,  1.512f * 2.0f + 0.28f,
@@ -104,3 +56,19 @@ const float laserXTOffset[HS_LIDAR_XT_UNIT_NUM] = {
     1.512f * 24.0f + 0.28f, 1.512f * 25.0f + 0.28f, 1.512f * 26.0f + 0.28f,
     1.512f * 27.0f + 0.28f, 1.512f * 28.0f + 0.28f, 1.512f * 29.0f + 0.28f,
     1.512f * 30.0f + 0.28f, 1.512f * 31.0f + 0.28f};
+
+class PandarXT : public PandarGeneral_Internal {
+  public:
+    template <typename... Args>
+    PandarXT(Args &&...args) : PandarGeneral_Internal(std::forward<Args>(args)...) {
+        Init();
+    }
+
+  private:
+    void Init();
+
+    virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) final;
+
+    virtual void
+    CalcPointXYZIT(HS_LIDAR_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld) final;
+};

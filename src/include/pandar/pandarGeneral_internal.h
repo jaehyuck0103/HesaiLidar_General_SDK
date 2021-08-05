@@ -17,10 +17,6 @@
 #pragma once
 
 #include "input.h"
-#include "pandar40.h"
-#include "pandar64.h"
-#include "pandarQT.h"
-#include "pandarXT.h"
 #include "pcap_reader.h"
 #include "point_types.h"
 
@@ -30,9 +26,29 @@
 #include <list>
 #include <string>
 
-/**
- *
- */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+inline double degreeToRadian(double degree) { return degree * M_PI / 180; }
+
+struct HS_LIDAR_Unit {
+    double distance;
+    uint8_t intensity;
+};
+
+struct HS_LIDAR_Block {
+    uint16_t azimuth; // Azimuth = RealAzimuth * 100
+    std::vector<HS_LIDAR_Unit> units;
+};
+
+struct HS_LIDAR_Packet {
+    std::vector<HS_LIDAR_Block> blocks;
+    std::array<uint8_t, 6> UTC; // Year, month, date, hour, minitiue, second
+    uint32_t timestamp;         // 0 ~ 1000000 us (1s)
+    uint8_t returnMode;
+};
+
 #define GPS_PACKET_SIZE (512)
 #define GPS_PACKET_FLAG_SIZE (2)
 #define GPS_PACKET_YEAR_SIZE (2)
@@ -103,7 +119,7 @@ class PandarGeneral_Internal {
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time
-    ~PandarGeneral_Internal();
+    virtual ~PandarGeneral_Internal();
 
     /**
      * @brief load the correction file
@@ -121,48 +137,24 @@ class PandarGeneral_Internal {
     void Stop();
 
   private:
-    void Init();
+    void InitLUT();
     void RecvTask();
     void ProcessGps(const PandarGPS &gpsMsg);
     void ProcessLidarPacket();
     void PushLidarData(PandarPacket packet);
 
-    int ParseL40Data(HS_LIDAR_L40_Packet *packet, const uint8_t *buf, const int len);
-    int ParseL64Data(HS_LIDAR_L64_Packet *packet, const uint8_t *recvbuf, const int len);
-    int ParseQTData(HS_LIDAR_QT_Packet *packet, const uint8_t *recvbuf, const int len);
-    int ParseXTData(HS_LIDAR_XT_Packet *packet, const uint8_t *recvbuf, const int len);
     int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
-
-    void
-    CalcL40PointXYZIT(HS_LIDAR_L40_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
-    void CalcL64PointXYZIT(
-        HS_LIDAR_L64_Packet *pkt,
-        int blockid,
-        char chLaserNumber,
-        std::shared_ptr<PPointCloud> cld);
-    void CalcQTPointXYZIT(
-        HS_LIDAR_QT_Packet *pkt,
-        int blockid,
-        char chLaserNumber,
-        std::shared_ptr<PPointCloud> cld);
-    void CalcXTPointXYZIT(
-        HS_LIDAR_XT_Packet *pkt,
-        int blockid,
-        char chLaserNumber,
-        std::shared_ptr<PPointCloud> cld);
 
     void FillPacket(const uint8_t *buf, const int len, double timestamp);
     void EmitBackMessege(char chLaserNumber, std::shared_ptr<PPointCloud> cld);
 
     pthread_mutex_t lidar_lock_;
     sem_t lidar_sem_;
-    std::thread *lidar_recv_thr_;
-    std::thread *lidar_process_thr_;
-    bool enable_lidar_recv_thr_;
-    bool enable_lidar_process_thr_;
+    std::thread *lidar_recv_thr_ = nullptr;
+    std::thread *lidar_process_thr_ = nullptr;
+    bool enable_lidar_recv_thr_ = false;
+    bool enable_lidar_process_thr_ = false;
     int start_angle_;
-    std::string m_sTimestampType;
-    double m_dPktTimestamp;
 
     std::list<PandarPacket> lidar_packets_;
 
@@ -173,31 +165,32 @@ class PandarGeneral_Internal {
     float sin_lookup_table_[ROTATION_MAX_UNITS];
     float cos_lookup_table_[ROTATION_MAX_UNITS];
 
-    uint16_t last_azimuth_;
+    uint16_t last_azimuth_ = 0;
 
-    float elev_angle_map_[MAX_LASER_NUM];
-    float azimuth_offset_map_[MAX_LASER_NUM];
+    std::string frame_id_;
+    PcapReader *pcap_reader_ = nullptr;
+    bool connect_lidar_;
 
-    float block64OffsetSingle_[HS_LIDAR_L64_BLOCK_NUMBER];
-    float block64OffsetDual_[HS_LIDAR_L64_BLOCK_NUMBER];
-    float laser64Offset_[HS_LIDAR_L64_UNIT_NUM];
+  protected:
+    std::vector<float> elev_angle_map_;
+    std::vector<float> azimuth_offset_map_;
 
-    float block40OffsetSingle_[HS_LIDAR_L40_BLOCKS_PER_PACKET];
-    float block40OffsetDual_[HS_LIDAR_L40_BLOCKS_PER_PACKET];
-    float laser40Offset_[HS_LIDAR_L40_LASER_COUNT];
-
-    float blockQTOffsetSingle_[HS_LIDAR_QT_BLOCK_NUMBER];
-    float blockQTOffsetDual_[HS_LIDAR_QT_BLOCK_NUMBER];
-    float laserQTOffset_[HS_LIDAR_QT_UNIT_NUM];
-
-    float blockXTOffsetSingle_[HS_LIDAR_XT_BLOCK_NUMBER];
-    float blockXTOffsetDual_[HS_LIDAR_XT_BLOCK_NUMBER];
-    float laserXTOffset_[HS_LIDAR_XT_UNIT_NUM];
+    std::vector<float> blockOffsetSingle_;
+    std::vector<float> blockOffsetDual_;
+    std::vector<float> laserOffset_;
 
     int tz_second_;
-    std::string frame_id_;
+    std::string m_sTimestampType;
+    double m_dPktTimestamp = 0.0;
     int pcl_type_;
-    PcapReader *pcap_reader_;
-    bool connect_lidar_;
     std::string m_sLidarType;
+
+    virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) = 0;
+
+    virtual void
+    CalcPointXYZIT(HS_LIDAR_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld) = 0;
+
+    int num_lasers_ = 0;
+
+    std::array<std::vector<PPoint>, 128> PointCloudList;
 };

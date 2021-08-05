@@ -15,6 +15,10 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
+#include "pandar/pandar40P.h"
+#include "pandar/pandar64.h"
+#include "pandar/pandarQT.h"
+#include "pandar/pandarXT.h"
 #include "pandar/tcp_command_client.h"
 
 #include <cstdlib>
@@ -34,18 +38,61 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string frame_id,
     std::string timestampType) {
 
-    internal_ = std::make_unique<PandarGeneral_Internal>(
-        device_ip,
-        lidar_port,
-        gps_port,
-        pcl_callback,
-        gps_callback,
-        start_angle,
-        tz,
-        pcl_type,
-        lidar_type,
-        frame_id,
-        timestampType);
+    if (lidar_type == "Pandar40P") {
+        internal_ = std::make_unique<Pandar40P>(
+            device_ip,
+            lidar_port,
+            gps_port,
+            pcl_callback,
+            gps_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "Pandar64") {
+        internal_ = std::make_unique<Pandar64>(
+            device_ip,
+            lidar_port,
+            gps_port,
+            pcl_callback,
+            gps_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "PandarQT") {
+        internal_ = std::make_unique<PandarQT>(
+            device_ip,
+            lidar_port,
+            gps_port,
+            pcl_callback,
+            gps_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "PandarXT-32" || lidar_type == "PandarXT-16") {
+        internal_ = std::make_unique<PandarXT>(
+            device_ip,
+            lidar_port,
+            gps_port,
+            pcl_callback,
+            gps_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else {
+        abort();
+    }
 
     // Try to get calibration.
     for (int i = 0; i < 5; ++i) {
@@ -66,15 +113,49 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string frame_id,
     std::string timestampType) {
 
-    internal_ = std::make_unique<PandarGeneral_Internal>(
-        pcap_path,
-        pcl_callback,
-        start_angle,
-        tz,
-        pcl_type,
-        lidar_type,
-        frame_id,
-        timestampType);
+    if (lidar_type == "Pandar40P") {
+        internal_ = std::make_unique<Pandar40P>(
+            pcap_path,
+            pcl_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "Pandar64") {
+        internal_ = std::make_unique<Pandar64>(
+            pcap_path,
+            pcl_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "PandarQT") {
+        internal_ = std::make_unique<PandarQT>(
+            pcap_path,
+            pcl_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else if (lidar_type == "PandarXT-32" || lidar_type == "PandarXT-16") {
+        internal_ = std::make_unique<PandarXT>(
+            pcap_path,
+            pcl_callback,
+            start_angle,
+            tz,
+            pcl_type,
+            lidar_type,
+            frame_id,
+            timestampType);
+    } else {
+        abort();
+    }
 }
 
 PandarGeneralSDK::~PandarGeneralSDK() { Stop(); }
