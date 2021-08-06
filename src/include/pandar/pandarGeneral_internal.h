@@ -187,8 +187,7 @@ class PandarGeneral_Internal {
 
     virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) = 0;
 
-    virtual void
-    CalcPointXYZIT(HS_LIDAR_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld) = 0;
+    void CalcPointXYZIT(HS_LIDAR_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
 
     int num_lasers_ = 0;
 

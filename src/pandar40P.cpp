@@ -3,70 +3,70 @@
 void Pandar40P::Init() {
 
     blockOffsetSingle_.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
-    blockOffsetSingle_[9] = 55.56f * 0.0f + 28.58f;
-    blockOffsetSingle_[8] = 55.56f * 1.0f + 28.58f;
-    blockOffsetSingle_[7] = 55.56f * 2.0f + 28.58f;
-    blockOffsetSingle_[6] = 55.56f * 3.0f + 28.58f;
-    blockOffsetSingle_[5] = 55.56f * 4.0f + 28.58f;
-    blockOffsetSingle_[4] = 55.56f * 5.0f + 28.58f;
-    blockOffsetSingle_[3] = 55.56f * 6.0f + 28.58f;
-    blockOffsetSingle_[2] = 55.56f * 7.0f + 28.58f;
-    blockOffsetSingle_[1] = 55.56f * 8.0f + 28.58f;
-    blockOffsetSingle_[0] = 55.56f * 9.0f + 28.58f;
+    blockOffsetSingle_[9] = -(55.56f * 0.0f + 28.58f);
+    blockOffsetSingle_[8] = -(55.56f * 1.0f + 28.58f);
+    blockOffsetSingle_[7] = -(55.56f * 2.0f + 28.58f);
+    blockOffsetSingle_[6] = -(55.56f * 3.0f + 28.58f);
+    blockOffsetSingle_[5] = -(55.56f * 4.0f + 28.58f);
+    blockOffsetSingle_[4] = -(55.56f * 5.0f + 28.58f);
+    blockOffsetSingle_[3] = -(55.56f * 6.0f + 28.58f);
+    blockOffsetSingle_[2] = -(55.56f * 7.0f + 28.58f);
+    blockOffsetSingle_[1] = -(55.56f * 8.0f + 28.58f);
+    blockOffsetSingle_[0] = -(55.56f * 9.0f + 28.58f);
 
     blockOffsetDual_.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
-    blockOffsetDual_[9] = 55.56f * 0.0f + 28.58f;
-    blockOffsetDual_[8] = 55.56f * 0.0f + 28.58f;
-    blockOffsetDual_[7] = 55.56f * 1.0f + 28.58f;
-    blockOffsetDual_[6] = 55.56f * 1.0f + 28.58f;
-    blockOffsetDual_[5] = 55.56f * 2.0f + 28.58f;
-    blockOffsetDual_[4] = 55.56f * 2.0f + 28.58f;
-    blockOffsetDual_[3] = 55.56f * 3.0f + 28.58f;
-    blockOffsetDual_[2] = 55.56f * 3.0f + 28.58f;
-    blockOffsetDual_[1] = 55.56f * 4.0f + 28.58f;
-    blockOffsetDual_[0] = 55.56f * 4.0f + 28.58f;
+    blockOffsetDual_[9] = -(55.56f * 0.0f + 28.58f);
+    blockOffsetDual_[8] = -(55.56f * 0.0f + 28.58f);
+    blockOffsetDual_[7] = -(55.56f * 1.0f + 28.58f);
+    blockOffsetDual_[6] = -(55.56f * 1.0f + 28.58f);
+    blockOffsetDual_[5] = -(55.56f * 2.0f + 28.58f);
+    blockOffsetDual_[4] = -(55.56f * 2.0f + 28.58f);
+    blockOffsetDual_[3] = -(55.56f * 3.0f + 28.58f);
+    blockOffsetDual_[2] = -(55.56f * 3.0f + 28.58f);
+    blockOffsetDual_[1] = -(55.56f * 4.0f + 28.58f);
+    blockOffsetDual_[0] = -(55.56f * 4.0f + 28.58f);
 
     laserOffset_.resize(HS_LIDAR_L40_LASER_COUNT);
-    laserOffset_[3] = 3.62f;
-    laserOffset_[39] = 3.62f;
-    laserOffset_[35] = 4.92f;
-    laserOffset_[27] = 6.23f;
-    laserOffset_[11] = 8.19f;
-    laserOffset_[15] = 8.19f;
-    laserOffset_[31] = 9.5f;
-    laserOffset_[23] = 11.47f;
-    laserOffset_[28] = 12.77f;
-    laserOffset_[16] = 14.74f;
-    laserOffset_[2] = 16.04f;
-    laserOffset_[38] = 16.04f;
-    laserOffset_[34] = 17.35f;
-    laserOffset_[24] = 18.65f;
-    laserOffset_[8] = 20.62f;
-    laserOffset_[12] = 20.62f;
-    laserOffset_[30] = 21.92f;
-    laserOffset_[20] = 23.89f;
-    laserOffset_[25] = 25.19f;
-    laserOffset_[13] = 27.16f;
-    laserOffset_[1] = 28.47f;
-    laserOffset_[37] = 28.47f;
-    laserOffset_[33] = 29.77f;
-    laserOffset_[5] = 31.74f;
-    laserOffset_[21] = 31.7447f;
-    laserOffset_[9] = 33.71f;
-    laserOffset_[29] = 35.01f;
-    laserOffset_[17] = 36.98f;
-    laserOffset_[22] = 38.95f;
-    laserOffset_[10] = 40.91f;
-    laserOffset_[0] = 42.22f;
-    laserOffset_[36] = 42.22f;
-    laserOffset_[32] = 43.52f;
-    laserOffset_[4] = 45.49f;
-    laserOffset_[18] = 45.49f;
-    laserOffset_[6] = 47.46f;
-    laserOffset_[26] = 48.76f;
-    laserOffset_[14] = 50.73f;
-    laserOffset_[19] = 52.7f;
-    laserOffset_[7] = 54.67f;
+    laserOffset_[3] = -3.62f;
+    laserOffset_[39] = -3.62f;
+    laserOffset_[35] = -4.92f;
+    laserOffset_[27] = -6.23f;
+    laserOffset_[11] = -8.19f;
+    laserOffset_[15] = -8.19f;
+    laserOffset_[31] = -9.5f;
+    laserOffset_[23] = -11.47f;
+    laserOffset_[28] = -12.77f;
+    laserOffset_[16] = -14.74f;
+    laserOffset_[2] = -16.04f;
+    laserOffset_[38] = -16.04f;
+    laserOffset_[34] = -17.35f;
+    laserOffset_[24] = -18.65f;
+    laserOffset_[8] = -20.62f;
+    laserOffset_[12] = -20.62f;
+    laserOffset_[30] = -21.92f;
+    laserOffset_[20] = -23.89f;
+    laserOffset_[25] = -25.19f;
+    laserOffset_[13] = -27.16f;
+    laserOffset_[1] = -28.47f;
+    laserOffset_[37] = -28.47f;
+    laserOffset_[33] = -29.77f;
+    laserOffset_[5] = -31.74f;
+    laserOffset_[21] = -31.7447f;
+    laserOffset_[9] = -33.71f;
+    laserOffset_[29] = -35.01f;
+    laserOffset_[17] = -36.98f;
+    laserOffset_[22] = -38.95f;
+    laserOffset_[10] = -40.91f;
+    laserOffset_[0] = -42.22f;
+    laserOffset_[36] = -42.22f;
+    laserOffset_[32] = -43.52f;
+    laserOffset_[4] = -45.49f;
+    laserOffset_[18] = -45.49f;
+    laserOffset_[6] = -47.46f;
+    laserOffset_[26] = -48.76f;
+    laserOffset_[14] = -50.73f;
+    laserOffset_[19] = -52.7f;
+    laserOffset_[7] = -54.67f;
 
     elev_angle_map_ = {15.0f,  11.0f,  8.0f,   5.0f,   3.0f,   2.0f,   1.67f,  1.33f,
                        1.0f,   0.67f,  0.33f,  0.0f,   -0.33f, -0.67f, -1.0f,  -1.33f,
@@ -141,83 +141,4 @@ int Pandar40P::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const 
     index += HS_LIDAR_L40_UTC_TIME;
 
     return 0;
-}
-
-void Pandar40P::CalcPointXYZIT(
-    HS_LIDAR_Packet *pkt,
-    int blockid,
-    std::shared_ptr<PPointCloud> cld) {
-    HS_LIDAR_Block *block = &pkt->blocks[blockid];
-
-    tm tTm;
-    // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
-    // and mktime's year start from 1900 which is 0. so we need add 100 year.
-    tTm.tm_year = pkt->UTC[0] + 100;
-
-    // in case of time error
-    if (tTm.tm_year >= 200) {
-        tTm.tm_year -= 100;
-    }
-
-    // UTC's month start from 1, but mktime only accept month from 0.
-    tTm.tm_mon = pkt->UTC[1] - 1;
-    tTm.tm_mday = pkt->UTC[2];
-    tTm.tm_hour = pkt->UTC[3];
-    tTm.tm_min = pkt->UTC[4];
-    tTm.tm_sec = pkt->UTC[5];
-    tTm.tm_isdst = 0;
-
-    double unix_second = static_cast<double>(mktime(&tTm) + tz_second_);
-
-    for (int i = 0; i < num_lasers_; ++i) {
-        /* for all the units in a block */
-        HS_LIDAR_Unit &unit = block->units[i];
-        PPoint point;
-
-        /* skip wrong points */
-        if (unit.distance <= 0.1 || unit.distance > 200.0) {
-            continue;
-        }
-
-        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
-
-        point.x = static_cast<float>(
-            xyDistance *
-            sinf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
-        point.y = static_cast<float>(
-            xyDistance *
-            cosf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
-        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
-
-        point.intensity = unit.intensity;
-
-        if ("realtime" == m_sTimestampType) {
-            point.timestamp = m_dPktTimestamp;
-        } else {
-            point.timestamp = unix_second + (static_cast<double>(pkt->timestamp)) / 1000000.0;
-
-            if (pkt->returnMode >= 0x39) {
-                // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
-                point.timestamp =
-                    point.timestamp -
-                    (static_cast<double>(blockOffsetDual_[blockid] + laserOffset_[i]) /
-                     1000000.0f);
-            } else {
-                point.timestamp =
-                    point.timestamp -
-                    (static_cast<double>(blockOffsetSingle_[blockid] + laserOffset_[i]) /
-                     1000000.0f);
-            }
-        }
-
-        point.ring = i;
-
-        if (pcl_type_) {
-            PointCloudList[i].push_back(point);
-        } else {
-            cld->push_back(point);
-        }
-    }
 }
