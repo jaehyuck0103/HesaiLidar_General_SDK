@@ -20,7 +20,6 @@
 #include <sstream>
 
 PandarGeneral_Internal::PandarGeneral_Internal(
-    std::string device_ip,
     uint16_t lidar_port,
     uint16_t gps_port,
     std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
@@ -44,7 +43,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     frame_id_ = frame_id;
     tz_second_ = tz * 3600;
     pcl_type_ = pcl_type;
-    connect_lidar_ = true;
     m_sTimestampType = timestampType;
 
     InitLUT();
@@ -63,7 +61,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     pthread_mutex_init(&lidar_lock_, NULL);
     sem_init(&lidar_sem_, 0, 0);
 
-    pcap_reader_ = new PcapReader(pcap_path, lidar_type);
+    pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
 
     start_angle_ = start_angle;
     pcl_callback_ = pcl_callback;
@@ -72,7 +70,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     frame_id_ = frame_id;
     tz_second_ = tz * 3600;
     pcl_type_ = pcl_type;
-    connect_lidar_ = false;
     m_sTimestampType = timestampType;
 
     InitLUT();
@@ -82,11 +79,6 @@ PandarGeneral_Internal::~PandarGeneral_Internal() {
     Stop();
     sem_destroy(&lidar_sem_);
     pthread_mutex_destroy(&lidar_lock_);
-
-    if (pcap_reader_ != NULL) {
-        delete pcap_reader_;
-        pcap_reader_ = NULL;
-    }
 }
 
 void PandarGeneral_Internal::InitLUT() {
@@ -152,10 +144,6 @@ int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
     return 0;
 }
 
-/**
- * @brief load the correction file
- * @param angle The start angle
- */
 void PandarGeneral_Internal::ResetStartAngle(uint16_t start_angle) { start_angle_ = start_angle; }
 
 void PandarGeneral_Internal::Start() {
@@ -164,17 +152,12 @@ void PandarGeneral_Internal::Start() {
     enable_lidar_recv_thr_ = true;
     enable_lidar_process_thr_ = true;
     lidar_process_thr_ =
-        new std::thread(std::bind(&PandarGeneral_Internal::ProcessLidarPacket, this));
+        std::make_unique<std::thread>(&PandarGeneral_Internal::ProcessLidarPacket, this);
 
-    if (connect_lidar_) {
-        lidar_recv_thr_ = new std::thread(std::bind(&PandarGeneral_Internal::RecvTask, this));
+    if (pcap_reader_) {
+        pcap_reader_->start([this](auto a, auto b, auto c) { FillPacket(a, b, c); });
     } else {
-        pcap_reader_->start(std::bind(
-            &PandarGeneral_Internal::FillPacket,
-            this,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3));
+        lidar_recv_thr_ = std::make_unique<std::thread>(&PandarGeneral_Internal::RecvTask, this);
     }
 }
 
@@ -182,19 +165,13 @@ void PandarGeneral_Internal::Stop() {
     enable_lidar_recv_thr_ = false;
     enable_lidar_process_thr_ = false;
 
-    if (lidar_process_thr_) {
-        lidar_process_thr_->join();
-        delete lidar_process_thr_;
-        lidar_process_thr_ = NULL;
-    }
-
     if (lidar_recv_thr_) {
         lidar_recv_thr_->join();
-        delete lidar_recv_thr_;
-        lidar_recv_thr_ = NULL;
     }
-
-    if (pcap_reader_ != NULL) {
+    if (lidar_process_thr_) {
+        lidar_process_thr_->join();
+    }
+    if (pcap_reader_) {
         pcap_reader_->stop();
     }
 
@@ -202,8 +179,6 @@ void PandarGeneral_Internal::Stop() {
 }
 
 void PandarGeneral_Internal::RecvTask() {
-    // LOG_FUNC();
-    int ret = 0;
     while (enable_lidar_recv_thr_) {
         PandarPacket pkt;
         int rc = input_->getPacket(&pkt);
@@ -213,14 +188,13 @@ void PandarGeneral_Internal::RecvTask() {
 
         if (pkt.size == GPS_PACKET_SIZE) {
             PandarGPS gpsMsg;
-            ret = ParseGPS(&gpsMsg, pkt.data, pkt.size);
+            int ret = ParseGPS(&gpsMsg, pkt.data, pkt.size);
             if (ret == 0) {
                 ProcessGps(gpsMsg);
             }
-            continue;
+        } else {
+            PushLidarData(pkt);
         }
-
-        PushLidarData(pkt);
     }
 }
 
@@ -235,14 +209,13 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
 }
 
 void PandarGeneral_Internal::ProcessLidarPacket() {
-    // LOG_FUNC();
-    timespec ts;
-    int ret = 0;
 
     std::shared_ptr<PPointCloud> outMsg(new PPointCloud());
+    int last_azimuth = 0;
 
     while (enable_lidar_process_thr_) {
 
+        timespec ts;
         if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
             std::cout << "get time error" << std::endl;
         }
@@ -256,30 +229,25 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
         PandarPacket packet = lidar_packets_.front();
         lidar_packets_.pop_front();
         pthread_mutex_unlock(&lidar_lock_);
-        m_dPktTimestamp = packet.stamp;
 
         HS_LIDAR_Packet pkt;
-        ret = ParseData(&pkt, packet.data, packet.size);
+        int ret = ParseData(&pkt, packet.data, packet.size);
         if (ret != 0) {
             continue;
         }
 
         for (size_t i = 0; i < pkt.blocks.size(); ++i) {
-            int azimuthGap = 0; /* To do */
 
-            if (last_azimuth_ > pkt.blocks[i].azimuth) {
-                azimuthGap = static_cast<int>(pkt.blocks[i].azimuth) +
-                             (36000 - static_cast<int>(last_azimuth_));
-            } else {
-                azimuthGap =
-                    static_cast<int>(pkt.blocks[i].azimuth) - static_cast<int>(last_azimuth_);
+            int curr_azimuth = static_cast<int>(pkt.blocks[i].azimuth);
+
+            int azimuthGap = curr_azimuth - last_azimuth;
+            if (azimuthGap < 0) {
+                azimuthGap += 36000;
             }
 
-            if (last_azimuth_ != pkt.blocks[i].azimuth && azimuthGap < 600 /* 6 degree*/) {
-                /* for all the blocks */
-                if ((last_azimuth_ > pkt.blocks[i].azimuth &&
-                     start_angle_ <= pkt.blocks[i].azimuth) ||
-                    (last_azimuth_ < start_angle_ && start_angle_ <= pkt.blocks[i].azimuth)) {
+            if (last_azimuth != curr_azimuth && azimuthGap < 600 /* 6 degree*/) {
+                if ((last_azimuth > curr_azimuth && start_angle_ <= curr_azimuth) ||
+                    (last_azimuth < start_angle_ && start_angle_ <= curr_azimuth)) {
 
                     if (pcl_callback_ &&
                         (outMsg->points.size() > 0 || PointCloudList[0].size() > 0)) {
@@ -288,8 +256,8 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
                     }
                 }
             }
-            CalcPointXYZIT(&pkt, i, outMsg);
-            last_azimuth_ = pkt.blocks[i].azimuth;
+            CalcPointXYZIT(pkt, i, outMsg, packet.stamp);
+            last_azimuth = curr_azimuth;
         }
 
         outMsg->header.frame_id = frame_id_;
@@ -352,6 +320,7 @@ int PandarGeneral_Internal::ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, 
 void PandarGeneral_Internal::EmitBackMessege(
     char chLaserNumber,
     std::shared_ptr<PPointCloud> cld) {
+
     if (pcl_type_) {
         for (int i = 0; i < chLaserNumber; i++) {
             for (size_t j = 0; j < PointCloudList[i].size(); j++) {
@@ -359,8 +328,10 @@ void PandarGeneral_Internal::EmitBackMessege(
             }
         }
     }
+
     pcl_callback_(cld, cld->points[0].timestamp);
     // cld.reset(new PPointCloud());
+
     if (pcl_type_) {
         for (int i = 0; i < 128; i++) {
             PointCloudList[i].clear();
@@ -369,16 +340,17 @@ void PandarGeneral_Internal::EmitBackMessege(
 }
 
 void PandarGeneral_Internal::CalcPointXYZIT(
-    HS_LIDAR_Packet *pkt,
+    const HS_LIDAR_Packet &pkt,
     int blockid,
-    std::shared_ptr<PPointCloud> cld) {
+    std::shared_ptr<PPointCloud> cld,
+    double pktRcvTimestamp) {
 
-    HS_LIDAR_Block *block = &pkt->blocks[blockid];
+    const HS_LIDAR_Block &block = pkt.blocks[blockid];
 
     tm tTm;
     // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
     // and mktime's year start from 1900 which is 0. so we need add 100 year.
-    tTm.tm_year = pkt->UTC[0] + 100;
+    tTm.tm_year = pkt.UTC[0] + 100;
 
     // in case of time error
     if (tTm.tm_year >= 200) {
@@ -386,18 +358,18 @@ void PandarGeneral_Internal::CalcPointXYZIT(
     }
 
     // UTC's month start from 1, but mktime only accept month from 0.
-    tTm.tm_mon = pkt->UTC[1] - 1;
-    tTm.tm_mday = pkt->UTC[2];
-    tTm.tm_hour = pkt->UTC[3];
-    tTm.tm_min = pkt->UTC[4];
-    tTm.tm_sec = pkt->UTC[5];
+    tTm.tm_mon = pkt.UTC[1] - 1;
+    tTm.tm_mday = pkt.UTC[2];
+    tTm.tm_hour = pkt.UTC[3];
+    tTm.tm_min = pkt.UTC[4];
+    tTm.tm_sec = pkt.UTC[5];
     tTm.tm_isdst = 0;
 
     double unix_second = static_cast<double>(mktime(&tTm) + tz_second_);
 
     for (int i = 0; i < num_lasers_; ++i) {
         /* for all the units in a block */
-        HS_LIDAR_Unit &unit = block->units[i];
+        const HS_LIDAR_Unit &unit = block.units[i];
         PPoint point;
 
         /* skip wrong points */
@@ -409,21 +381,21 @@ void PandarGeneral_Internal::CalcPointXYZIT(
         point.x = static_cast<float>(
             xyDistance *
             sinf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+                azimuth_offset_map_[i] + (static_cast<double>(block.azimuth)) / 100.0)));
         point.y = static_cast<float>(
             xyDistance *
             cosf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block->azimuth)) / 100.0)));
+                azimuth_offset_map_[i] + (static_cast<double>(block.azimuth)) / 100.0)));
         point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
 
         point.intensity = unit.intensity;
 
         if ("realtime" == m_sTimestampType) {
-            point.timestamp = m_dPktTimestamp;
+            point.timestamp = pktRcvTimestamp;
         } else {
-            point.timestamp = unix_second + (static_cast<double>(pkt->timestamp)) / 1000000.0;
+            point.timestamp = unix_second + (static_cast<double>(pkt.timestamp)) / 1000000.0;
 
-            if (pkt->returnMode >= 0x39) {
+            if (pkt.returnMode >= 0x39) {
                 // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
                 point.timestamp =
                     point.timestamp +

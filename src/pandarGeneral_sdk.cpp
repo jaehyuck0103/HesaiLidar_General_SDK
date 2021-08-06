@@ -40,7 +40,6 @@ PandarGeneralSDK::PandarGeneralSDK(
 
     if (lidar_type == "Pandar40P") {
         internal_ = std::make_unique<Pandar40P>(
-            device_ip,
             lidar_port,
             gps_port,
             pcl_callback,
@@ -53,7 +52,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             timestampType);
     } else if (lidar_type == "Pandar64") {
         internal_ = std::make_unique<Pandar64>(
-            device_ip,
             lidar_port,
             gps_port,
             pcl_callback,
@@ -66,7 +64,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             timestampType);
     } else if (lidar_type == "PandarQT") {
         internal_ = std::make_unique<PandarQT>(
-            device_ip,
             lidar_port,
             gps_port,
             pcl_callback,
@@ -79,7 +76,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             timestampType);
     } else if (lidar_type == "PandarXT-32" || lidar_type == "PandarXT-16") {
         internal_ = std::make_unique<PandarXT>(
-            device_ip,
             lidar_port,
             gps_port,
             pcl_callback,

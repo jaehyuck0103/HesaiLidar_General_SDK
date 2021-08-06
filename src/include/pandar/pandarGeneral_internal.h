@@ -62,8 +62,6 @@ struct HS_LIDAR_Packet {
 #define HesaiLidarSDK_DEFAULT_LIDAR_RECV_PORT 8080
 #define HesaiLidarSDK_DEFAULT_GPS_RECV_PORT 10110
 
-#define MAX_LASER_NUM (256)
-
 struct PandarGPS {
     uint16_t flag;
     uint16_t year;
@@ -89,7 +87,6 @@ class PandarGeneral_Internal {
      *        type       				The device type
      */
     PandarGeneral_Internal(
-        std::string device_ip,
         uint16_t lidar_port,
         uint16_t gps_port,
         std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
@@ -150,8 +147,8 @@ class PandarGeneral_Internal {
 
     pthread_mutex_t lidar_lock_;
     sem_t lidar_sem_;
-    std::thread *lidar_recv_thr_ = nullptr;
-    std::thread *lidar_process_thr_ = nullptr;
+    std::unique_ptr<std::thread> lidar_recv_thr_;
+    std::unique_ptr<std::thread> lidar_process_thr_;
     bool enable_lidar_recv_thr_ = false;
     bool enable_lidar_process_thr_ = false;
     int start_angle_;
@@ -165,11 +162,8 @@ class PandarGeneral_Internal {
     float sin_lookup_table_[ROTATION_MAX_UNITS];
     float cos_lookup_table_[ROTATION_MAX_UNITS];
 
-    uint16_t last_azimuth_ = 0;
-
     std::string frame_id_;
-    PcapReader *pcap_reader_ = nullptr;
-    bool connect_lidar_;
+    std::unique_ptr<PcapReader> pcap_reader_;
 
   protected:
     std::vector<float> elev_angle_map_;
@@ -181,13 +175,16 @@ class PandarGeneral_Internal {
 
     int tz_second_;
     std::string m_sTimestampType;
-    double m_dPktTimestamp = 0.0;
     int pcl_type_;
     std::string m_sLidarType;
 
     virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) = 0;
 
-    void CalcPointXYZIT(HS_LIDAR_Packet *pkt, int blockid, std::shared_ptr<PPointCloud> cld);
+    void CalcPointXYZIT(
+        const HS_LIDAR_Packet &pkt,
+        int blockid,
+        std::shared_ptr<PPointCloud> cld,
+        double pktRcvTimestamp);
 
     int num_lasers_ = 0;
 
