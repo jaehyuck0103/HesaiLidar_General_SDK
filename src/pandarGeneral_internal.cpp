@@ -236,22 +236,16 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
 
             int curr_azimuth = static_cast<int>(pkt.blocks[i].azimuth);
 
-            int azimuthGap = curr_azimuth - last_azimuth;
-            if (azimuthGap < 0) {
-                azimuthGap += 36000;
-            }
+            if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
+                (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
+                (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
 
-            if (last_azimuth != curr_azimuth && azimuthGap < 600 /* 6 degree*/) {
-                if ((last_azimuth > curr_azimuth && start_angle_ <= curr_azimuth) ||
-                    (last_azimuth < start_angle_ && start_angle_ <= curr_azimuth)) {
-
-                    if (pcl_callback_ &&
-                        (outMsg->points.size() > 0 || PointCloudList[0].size() > 0)) {
-                        EmitBackMessege(num_lasers_, outMsg);
-                        outMsg.reset(new PPointCloud());
-                    }
+                if (pcl_callback_ && (outMsg->points.size() > 0 || PointCloudList[0].size() > 0)) {
+                    EmitBackMessege(num_lasers_, outMsg);
+                    outMsg.reset(new PPointCloud());
                 }
             }
+
             CalcPointXYZIT(pkt, i, outMsg, packet.stamp);
             last_azimuth = curr_azimuth;
         }
