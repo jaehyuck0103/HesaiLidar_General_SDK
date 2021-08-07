@@ -1,5 +1,4 @@
 #include "pandar/pcap_reader.h"
-#include "pandar/log.h"
 #include "pandar/util.h"
 #include <map>
 #include <sys/time.h>
@@ -49,7 +48,6 @@ void PcapReader::initTimeIndexMap() {
 
 void PcapReader::start(
     std::function<void(const uint8_t *, const int, double timestamp)> callback) {
-    // LOG_FUNC();
     stop();
 
     this->callback = callback;
@@ -69,7 +67,6 @@ void PcapReader::stop() {
 }
 
 void PcapReader::parsePcap() {
-    // LOG_FUNC();
     pcap_t *pcapFile = NULL;
     char pcapBuf[PCAP_ERRBUF_SIZE];
     struct bpf_program filter;
@@ -121,7 +118,6 @@ void PcapReader::parsePcap() {
             t.tm_hour = packet[m_iUTCIndex + 3];
             t.tm_min = packet[m_iUTCIndex + 4];
             t.tm_sec = packet[m_iUTCIndex + 5];
-            // LOG_D("[%d][%d][%d][%d][%d][%d]",t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec);
             t.tm_isdst = 0;
 
             pkt_ts = mktime(&t) * 1000000 + ((packet[m_iTsIndex] & 0xff) |
@@ -137,8 +133,6 @@ void PcapReader::parsePcap() {
                 last_time = current_time;
             } else {
                 int64_t sleep_time = (pkt_ts - last_pkt_ts) - (current_time - last_time);
-                // LOG_D("[%lld],[%lld],[%lld],[%lld]",pkt_ts,last_pkt_ts,current_time,last_time);
-                // LOG_D("sleep time is: [%lld]", sleep_time);
 
                 if (sleep_time > 0) {
                     struct timeval waitTime;
@@ -158,7 +152,6 @@ void PcapReader::parsePcap() {
             }
         }
     }
-    // LOG_D("read pcap file done");
 
     if (pcapFile != NULL) {
         pcap_close(pcapFile);

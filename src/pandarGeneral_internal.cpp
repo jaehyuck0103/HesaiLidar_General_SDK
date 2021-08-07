@@ -15,7 +15,6 @@
  *****************************************************************************/
 
 #include "pandar/pandarGeneral_internal.h"
-#include "pandar/log.h"
 
 #include <sstream>
 
@@ -94,8 +93,6 @@ void PandarGeneral_Internal::InitLUT() {
  * @param file The path of correction file
  */
 int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
-    // LOG_FUNC();
-    // LOG_D("stirng:[%s]",correction_content.c_str());
     std::istringstream ifs(correction_content);
 
     std::string line;
@@ -147,7 +144,6 @@ int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
 void PandarGeneral_Internal::ResetStartAngle(uint16_t start_angle) { start_angle_ = start_angle; }
 
 void PandarGeneral_Internal::Start() {
-    // LOG_FUNC();
     Stop();
     enable_lidar_recv_thr_ = true;
     enable_lidar_process_thr_ = true;

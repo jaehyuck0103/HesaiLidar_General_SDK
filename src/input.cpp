@@ -15,7 +15,6 @@
  *****************************************************************************/
 
 #include "pandar/input.h"
-#include "pandar/log.h"
 #include "pandar/util.h"
 
 #include <arpa/inet.h>
@@ -31,7 +30,6 @@
 #include <time.h>
 
 Input::Input(uint16_t port, uint16_t gpsPort) {
-    // LOG_D("port: %d, gpsPort: %d", port,gpsPort);
     socketForLidar = -1;
     socketForLidar = socket(PF_INET, SOCK_DGRAM, 0);
     if (socketForLidar == -1) {
