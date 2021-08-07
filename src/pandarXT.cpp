@@ -1,5 +1,7 @@
 #include "pandar/pandarXT.h"
 
+#include <iostream>
+
 void PandarXT::Init() {
 
     if (m_sLidarType == "PandarXT-32") {

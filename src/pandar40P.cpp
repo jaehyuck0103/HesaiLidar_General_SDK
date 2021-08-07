@@ -1,5 +1,7 @@
 #include "pandar/pandar40P.h"
 
+#include <iostream>
+
 void Pandar40P::Init() {
 
     blockOffsetSingle_.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);

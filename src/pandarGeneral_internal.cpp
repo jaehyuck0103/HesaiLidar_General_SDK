@@ -16,16 +16,18 @@
 
 #include "pandar/pandarGeneral_internal.h"
 
+#include <cmath>
+#include <cstring>
+#include <iostream>
 #include <sstream>
 
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
     uint16_t gps_port,
-    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
-    int pcl_type,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -41,7 +43,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
     tz_second_ = tz * 3600;
-    pcl_type_ = pcl_type;
     m_sTimestampType = timestampType;
 
     InitLUT();
@@ -49,10 +50,9 @@ PandarGeneral_Internal::PandarGeneral_Internal(
 
 PandarGeneral_Internal::PandarGeneral_Internal(
     std::string pcap_path,
-    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     uint16_t start_angle,
     int tz,
-    int pcl_type,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -68,7 +68,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
     tz_second_ = tz * 3600;
-    pcl_type_ = pcl_type;
     m_sTimestampType = timestampType;
 
     InitLUT();
@@ -206,7 +205,6 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
 
 void PandarGeneral_Internal::ProcessLidarPacket() {
 
-    std::shared_ptr<PPointCloud> outMsg(new PPointCloud());
     int last_azimuth = 0;
 
     while (enable_lidar_process_thr_) {
@@ -240,18 +238,15 @@ void PandarGeneral_Internal::ProcessLidarPacket() {
                 (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
                 (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
 
-                if (pcl_callback_ && (outMsg->points.size() > 0 || PointCloudList[0].size() > 0)) {
-                    EmitBackMessege(num_lasers_, outMsg);
-                    outMsg.reset(new PPointCloud());
+                if (pcl_callback_ && PointCloudList.size() > 0) {
+                    pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
+                    PointCloudList.clear();
                 }
             }
 
-            CalcPointXYZIT(pkt, i, outMsg, packet.stamp);
+            CalcPointXYZIT(pkt, i, packet.stamp);
             last_azimuth = curr_azimuth;
         }
-
-        outMsg->header.frame_id = frame_id_;
-        outMsg->height = 1;
     }
 }
 
@@ -307,32 +302,9 @@ int PandarGeneral_Internal::ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, 
     return 0;
 }
 
-void PandarGeneral_Internal::EmitBackMessege(
-    char chLaserNumber,
-    std::shared_ptr<PPointCloud> cld) {
-
-    if (pcl_type_) {
-        for (int i = 0; i < chLaserNumber; i++) {
-            for (size_t j = 0; j < PointCloudList[i].size(); j++) {
-                cld->push_back(PointCloudList[i][j]);
-            }
-        }
-    }
-
-    pcl_callback_(cld, cld->points[0].timestamp);
-    // cld.reset(new PPointCloud());
-
-    if (pcl_type_) {
-        for (int i = 0; i < 128; i++) {
-            PointCloudList[i].clear();
-        }
-    }
-}
-
 void PandarGeneral_Internal::CalcPointXYZIT(
     const HS_LIDAR_Packet &pkt,
     int blockid,
-    std::shared_ptr<PPointCloud> cld,
     double pktRcvTimestamp) {
 
     const HS_LIDAR_Block &block = pkt.blocks[blockid];
@@ -360,7 +332,7 @@ void PandarGeneral_Internal::CalcPointXYZIT(
     for (int i = 0; i < num_lasers_; ++i) {
         /* for all the units in a block */
         const HS_LIDAR_Unit &unit = block.units[i];
-        PPoint point;
+        PointXYZIT point;
 
         /* skip wrong points */
         if (unit.distance <= 0.1 || unit.distance > 200.0) {
@@ -399,12 +371,6 @@ void PandarGeneral_Internal::CalcPointXYZIT(
             }
         }
 
-        point.ring = i;
-
-        if (pcl_type_) {
-            PointCloudList[i].push_back(point);
-        } else {
-            cld->push_back(point);
-        }
+        PointCloudList.push_back(point);
     }
 }

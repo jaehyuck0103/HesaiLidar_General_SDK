@@ -7,10 +7,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_VERBOSE_MAKEFILE true)
 
-find_package(PCL REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 add_library(
@@ -25,14 +24,15 @@ add_library(
   src/pandar64.cpp
   src/pandarQT.cpp
   src/pandarXT.cpp)
-target_include_directories(${PROJECT_NAME} PRIVATE include src/include
-                                                   ${PCL_INCLUDE_DIRS} pthread)
-target_link_libraries(${PROJECT_NAME} ${PCL_IO_LIBRARIES} pcap Eigen3::Eigen)
+target_include_directories(${PROJECT_NAME} PRIVATE include src/include pthread)
+target_link_libraries(${PROJECT_NAME} PRIVATE pcap Eigen3::Eigen)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+  find_package(PCL REQUIRED)
+
   add_executable(PandarGeneralTest test/test.cc)
-  target_include_directories(PandarGeneralTest PRIVATE include src/include
+  target_include_directories(PandarGeneralTest PRIVATE include
                                                        ${PCL_INCLUDE_DIRS})
-  target_link_libraries(PandarGeneralTest ${PROJECT_NAME} ${PCL_LIBRARIES}
-                        pthread)
+  target_link_libraries(PandarGeneralTest PRIVATE ${PROJECT_NAME}
+                                                  ${PCL_LIBRARIES} pthread)
 endif()

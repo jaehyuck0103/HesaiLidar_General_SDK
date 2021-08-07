@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "pandar/pandarGeneral_internal.h"
-#include "pandar/point_types.h"
+#include "pandarGeneral_sdk/point_types.h"
 
 #include <functional>
+#include <memory>
 #include <string>
+
+class PandarGeneral_Internal;
 
 class PandarGeneralSDK {
   public:
@@ -40,11 +42,10 @@ class PandarGeneralSDK {
         std::string device_ip,
         const uint16_t lidar_port,
         const uint16_t gps_port,
-        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
         int tz,
-        int pcl_type,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time
@@ -60,10 +61,9 @@ class PandarGeneralSDK {
      */
     PandarGeneralSDK(
         std::string pcap_path,
-        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         uint16_t start_angle,
         int tz,
-        int pcl_type,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time

@@ -18,13 +18,13 @@
 
 #include "input.h"
 #include "pcap_reader.h"
-#include "point_types.h"
 
-#include <semaphore.h>
-#include <thread>
+#include "pandarGeneral_sdk/point_types.h"
 
 #include <list>
+#include <semaphore.h>
 #include <string>
+#include <thread>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -89,11 +89,10 @@ class PandarGeneral_Internal {
     PandarGeneral_Internal(
         uint16_t lidar_port,
         uint16_t gps_port,
-        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
         int tz,
-        int pcl_type,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType);
@@ -109,10 +108,9 @@ class PandarGeneral_Internal {
      */
     PandarGeneral_Internal(
         std::string pcap_path,
-        std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         uint16_t start_angle,
         int tz,
-        int pcl_type,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time
@@ -143,7 +141,6 @@ class PandarGeneral_Internal {
     int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
 
     void FillPacket(const uint8_t *buf, const int len, double timestamp);
-    void EmitBackMessege(char chLaserNumber, std::shared_ptr<PPointCloud> cld);
 
     pthread_mutex_t lidar_lock_;
     sem_t lidar_sem_;
@@ -156,7 +153,7 @@ class PandarGeneral_Internal {
     std::list<PandarPacket> lidar_packets_;
 
     std::unique_ptr<Input> input_;
-    std::function<void(std::shared_ptr<PPointCloud> cld, double timestamp)> pcl_callback_;
+    std::function<void(std::vector<PointXYZIT> cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
 
     float sin_lookup_table_[ROTATION_MAX_UNITS];
@@ -175,18 +172,13 @@ class PandarGeneral_Internal {
 
     int tz_second_;
     std::string m_sTimestampType;
-    int pcl_type_;
     std::string m_sLidarType;
 
     virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) = 0;
 
-    void CalcPointXYZIT(
-        const HS_LIDAR_Packet &pkt,
-        int blockid,
-        std::shared_ptr<PPointCloud> cld,
-        double pktRcvTimestamp);
+    void CalcPointXYZIT(const HS_LIDAR_Packet &pkt, int blockid, double pktRcvTimestamp);
 
     int num_lasers_ = 0;
 
-    std::array<std::vector<PPoint>, 128> PointCloudList;
+    std::vector<PointXYZIT> PointCloudList;
 };

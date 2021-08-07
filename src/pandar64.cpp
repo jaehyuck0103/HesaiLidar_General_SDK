@@ -1,5 +1,7 @@
 #include "pandar/pandar64.h"
 
+#include <iostream>
+
 void Pandar64::Init() {
 
     blockOffsetSingle_.resize(HS_LIDAR_L64_BLOCK_NUMBER);

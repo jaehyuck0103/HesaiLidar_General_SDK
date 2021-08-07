@@ -22,6 +22,7 @@
 #include "pandar/tcp_command_client.h"
 
 #include <cstdlib>
+#include <iostream>
 
 constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
 
@@ -29,11 +30,10 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
     const uint16_t lidar_port,
     uint16_t gps_port,
-    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
     int tz,
-    int pcl_type,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -46,7 +46,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             gps_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -58,7 +57,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             gps_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -70,7 +68,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             gps_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -82,7 +79,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             gps_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -101,10 +97,9 @@ PandarGeneralSDK::PandarGeneralSDK(
 
 PandarGeneralSDK::PandarGeneralSDK(
     std::string pcap_path,
-    std::function<void(std::shared_ptr<PPointCloud>, double)> pcl_callback,
+    std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     uint16_t start_angle,
     int tz,
-    int pcl_type,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -115,7 +110,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -125,7 +119,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -135,7 +128,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);
@@ -145,7 +137,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             start_angle,
             tz,
-            pcl_type,
             lidar_type,
             frame_id,
             timestampType);

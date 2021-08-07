@@ -1,5 +1,7 @@
 #include "pandar/pandarQT.h"
 
+#include <iostream>
+
 void PandarQT::Init() {
 
     blockOffsetSingle_.resize(HS_LIDAR_QT_BLOCK_NUMBER);

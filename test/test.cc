@@ -21,11 +21,11 @@ pcl::visualization::CloudViewer viewer("Simple");
 
 void gpsCallback(int timestamp) { printf("gps: %d\n", timestamp); }
 
-void lidarCallback(std::shared_ptr<PPointCloud> cld, double timestamp) {
-    printf("timestamp: %lf,point_size: %ld\n", timestamp, cld->points.size());
+void lidarCallback(std::vector<PointXYZIT> cld, double timestamp) {
+    printf("timestamp: %lf,point_size: %ld\n", timestamp, cld.size());
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-    for (const auto &pt : cld->points) {
+    for (const auto &pt : cld) {
         cloud->emplace_back(pt.x, pt.y, pt.z);
     }
 
@@ -42,7 +42,6 @@ int main() {
         gpsCallback,
         0,
         0,
-        1,
         std::string("PandarXT-32"),
         std::string("frame_id"),
         "");
@@ -53,7 +52,6 @@ int main() {
         lidarCallback,
         0,
         0,
-        1,
         std::string("Pandar64"),
         std::string("frame_id"),
         "");
