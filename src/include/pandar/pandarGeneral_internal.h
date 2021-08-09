@@ -22,7 +22,6 @@
 #include "pandarGeneral_sdk/point_types.h"
 
 #include <list>
-#include <semaphore.h>
 #include <string>
 #include <thread>
 
@@ -135,19 +134,14 @@ class PandarGeneral_Internal {
     void InitLUT();
     void RecvTask();
     void ProcessGps(const PandarGPS &gpsMsg);
-    void ProcessLidarPacket();
-    void PushLidarData(PandarPacket packet);
+    void ProcessLidarPacket(const PandarPacket &packet);
 
     int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
 
     void FillPacket(const uint8_t *buf, const int len, double timestamp);
 
-    pthread_mutex_t lidar_lock_;
-    sem_t lidar_sem_;
     std::unique_ptr<std::thread> lidar_recv_thr_;
-    std::unique_ptr<std::thread> lidar_process_thr_;
     bool enable_lidar_recv_thr_ = false;
-    bool enable_lidar_process_thr_ = false;
     int start_angle_;
 
     std::list<PandarPacket> lidar_packets_;

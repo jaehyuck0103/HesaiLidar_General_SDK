@@ -32,9 +32,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::string frame_id,
     std::string timestampType) {
 
-    pthread_mutex_init(&lidar_lock_, NULL);
-    sem_init(&lidar_sem_, 0, 0);
-
     input_ = std::make_unique<Input>(lidar_port, gps_port);
 
     start_angle_ = start_angle;
@@ -57,9 +54,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::string frame_id,
     std::string timestampType) {
 
-    pthread_mutex_init(&lidar_lock_, NULL);
-    sem_init(&lidar_sem_, 0, 0);
-
     pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
 
     start_angle_ = start_angle;
@@ -73,11 +67,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     InitLUT();
 }
 
-PandarGeneral_Internal::~PandarGeneral_Internal() {
-    Stop();
-    sem_destroy(&lidar_sem_);
-    pthread_mutex_destroy(&lidar_lock_);
-}
+PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
 
 void PandarGeneral_Internal::InitLUT() {
     for (uint16_t rotIndex = 0; rotIndex < ROTATION_MAX_UNITS; ++rotIndex) {
@@ -87,10 +77,6 @@ void PandarGeneral_Internal::InitLUT() {
     }
 }
 
-/**
- * @brief load the correction file
- * @param file The path of correction file
- */
 int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
     std::istringstream ifs(correction_content);
 
@@ -145,9 +131,6 @@ void PandarGeneral_Internal::ResetStartAngle(uint16_t start_angle) { start_angle
 void PandarGeneral_Internal::Start() {
     Stop();
     enable_lidar_recv_thr_ = true;
-    enable_lidar_process_thr_ = true;
-    lidar_process_thr_ =
-        std::make_unique<std::thread>(&PandarGeneral_Internal::ProcessLidarPacket, this);
 
     if (pcap_reader_) {
         pcap_reader_->start([this](auto a, auto b, auto c) { FillPacket(a, b, c); });
@@ -158,13 +141,9 @@ void PandarGeneral_Internal::Start() {
 
 void PandarGeneral_Internal::Stop() {
     enable_lidar_recv_thr_ = false;
-    enable_lidar_process_thr_ = false;
 
     if (lidar_recv_thr_) {
         lidar_recv_thr_->join();
-    }
-    if (lidar_process_thr_) {
-        lidar_process_thr_->join();
     }
     if (pcap_reader_) {
         pcap_reader_->stop();
@@ -188,7 +167,7 @@ void PandarGeneral_Internal::RecvTask() {
                 ProcessGps(gpsMsg);
             }
         } else {
-            PushLidarData(pkt);
+            ProcessLidarPacket(pkt);
         }
     }
 }
@@ -199,62 +178,37 @@ void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, doubl
         memcpy(pkt.data, buf, len);
         pkt.size = len;
         pkt.stamp = timestamp;
-        PushLidarData(pkt);
+        ProcessLidarPacket(pkt);
     }
 }
 
-void PandarGeneral_Internal::ProcessLidarPacket() {
+void PandarGeneral_Internal::ProcessLidarPacket(const PandarPacket &packet) {
 
-    int last_azimuth = 0;
+    static int last_azimuth = 0;
 
-    while (enable_lidar_process_thr_) {
+    HS_LIDAR_Packet pkt;
+    int ret = ParseData(&pkt, packet.data, packet.size);
+    if (ret != 0) {
+        return;
+    }
 
-        timespec ts;
-        if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-            std::cout << "get time error" << std::endl;
-        }
+    for (size_t i = 0; i < pkt.blocks.size(); ++i) {
 
-        ts.tv_sec += 1;
-        if (sem_timedwait(&lidar_sem_, &ts) == -1) {
-            continue;
-        }
+        int curr_azimuth = static_cast<int>(pkt.blocks[i].azimuth);
 
-        pthread_mutex_lock(&lidar_lock_);
-        PandarPacket packet = lidar_packets_.front();
-        lidar_packets_.pop_front();
-        pthread_mutex_unlock(&lidar_lock_);
+        if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
+            (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
+            (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
 
-        HS_LIDAR_Packet pkt;
-        int ret = ParseData(&pkt, packet.data, packet.size);
-        if (ret != 0) {
-            continue;
-        }
-
-        for (size_t i = 0; i < pkt.blocks.size(); ++i) {
-
-            int curr_azimuth = static_cast<int>(pkt.blocks[i].azimuth);
-
-            if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
-                (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
-                (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
-
-                if (pcl_callback_ && PointCloudList.size() > 0) {
-                    pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
-                    PointCloudList.clear();
-                }
+            if (pcl_callback_ && PointCloudList.size() > 0) {
+                pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
+                PointCloudList.clear();
             }
-
-            CalcPointXYZIT(pkt, i, packet.stamp);
-            last_azimuth = curr_azimuth;
         }
-    }
-}
 
-void PandarGeneral_Internal::PushLidarData(PandarPacket packet) {
-    pthread_mutex_lock(&lidar_lock_);
-    lidar_packets_.push_back(packet);
-    sem_post(&lidar_sem_);
-    pthread_mutex_unlock(&lidar_lock_);
+        CalcPointXYZIT(pkt, i, packet.stamp);
+        last_azimuth = curr_azimuth;
+    }
 }
 
 void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
