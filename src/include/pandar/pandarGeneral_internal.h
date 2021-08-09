@@ -29,7 +29,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-inline double degreeToRadian(double degree) { return degree * M_PI / 180; }
+inline constexpr double degreeToRadian(double degree) { return degree * M_PI / 180; }
 
 struct HS_LIDAR_Unit {
     double distance;
@@ -58,9 +58,6 @@ struct HS_LIDAR_Packet {
 #define GPS_PACKET_SECOND_SIZE (2)
 #define GPS_ITEM_NUM (7)
 
-#define HesaiLidarSDK_DEFAULT_LIDAR_RECV_PORT 8080
-#define HesaiLidarSDK_DEFAULT_GPS_RECV_PORT 10110
-
 struct PandarGPS {
     uint16_t flag;
     uint16_t year;
@@ -72,22 +69,12 @@ struct PandarGPS {
     uint32_t fineTime;
 };
 
-#define ROTATION_MAX_UNITS (36001)
-
 class PandarGeneral_Internal {
   public:
-    /**
-     * @brief Constructor
-     * @param device_ip  				The ip of the device
-     *        lidar_port 				The port number of lidar data
-     *        gps_port   				The port number of gps data
-     *        pcl_callback      The callback of PCL data structure
-     *        gps_callback      The callback of GPS structure
-     *        type       				The device type
-     */
     PandarGeneral_Internal(
         uint16_t lidar_port,
         uint16_t gps_port,
+        std::string pcap_path,
         std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
@@ -96,36 +83,14 @@ class PandarGeneral_Internal {
         std::string frame_id,
         std::string timestampType);
 
-    /**
-     * @brief Constructor
-     * @param pcap_path         The path of pcap file
-     *        pcl_callback      The callback of PCL data structure
-     *        start_angle       The start angle of frame
-     *        tz                The timezone
-     *        pcl_type          Structured Pointcloud
-     *        frame_id          The frame id of pcd
-     */
-    PandarGeneral_Internal(
-        std::string pcap_path,
-        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
-        uint16_t start_angle,
-        int tz,
-        std::string lidar_type,
-        std::string frame_id,
-        std::string timestampType); // the default timestamp type is LiDAR time
     virtual ~PandarGeneral_Internal();
 
-    /**
-     * @brief load the correction file
-     * @param correction The path of correction file
-     */
     int LoadCorrectionFile(std::string correction);
 
     void Start();
     void Stop();
 
   private:
-    void InitLUT();
     void RecvTask();
     void ProcessGps(const PandarGPS &gpsMsg);
     void ProcessLidarPacket(const PandarPacket &packet);
@@ -143,9 +108,6 @@ class PandarGeneral_Internal {
     std::unique_ptr<Input> input_;
     std::function<void(std::vector<PointXYZIT> cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
-
-    float sin_lookup_table_[ROTATION_MAX_UNITS];
-    float cos_lookup_table_[ROTATION_MAX_UNITS];
 
     std::string frame_id_;
     std::unique_ptr<PcapReader> pcap_reader_;

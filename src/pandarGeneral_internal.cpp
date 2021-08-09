@@ -24,6 +24,7 @@
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
     uint16_t gps_port,
+    std::string pcap_path,
     std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
@@ -32,7 +33,11 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::string frame_id,
     std::string timestampType) {
 
-    input_ = std::make_unique<Input>(lidar_port, gps_port);
+    if (pcap_path.empty()) {
+        input_ = std::make_unique<Input>(lidar_port, gps_port);
+    } else {
+        pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
+    }
 
     start_angle_ = start_angle;
     pcl_callback_ = pcl_callback;
@@ -41,41 +46,9 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     frame_id_ = frame_id;
     tz_second_ = tz * 3600;
     m_sTimestampType = timestampType;
-
-    InitLUT();
-}
-
-PandarGeneral_Internal::PandarGeneral_Internal(
-    std::string pcap_path,
-    std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
-    uint16_t start_angle,
-    int tz,
-    std::string lidar_type,
-    std::string frame_id,
-    std::string timestampType) {
-
-    pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
-
-    start_angle_ = start_angle;
-    pcl_callback_ = pcl_callback;
-    gps_callback_ = NULL;
-    m_sLidarType = lidar_type;
-    frame_id_ = frame_id;
-    tz_second_ = tz * 3600;
-    m_sTimestampType = timestampType;
-
-    InitLUT();
 }
 
 PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
-
-void PandarGeneral_Internal::InitLUT() {
-    for (uint16_t rotIndex = 0; rotIndex < ROTATION_MAX_UNITS; ++rotIndex) {
-        float rotation = degreeToRadian(0.01 * static_cast<double>(rotIndex));
-        cos_lookup_table_[rotIndex] = cosf(rotation);
-        sin_lookup_table_[rotIndex] = sinf(rotation);
-    }
-}
 
 int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
     std::istringstream ifs(correction_content);

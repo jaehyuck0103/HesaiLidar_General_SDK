@@ -48,12 +48,16 @@ int main() {
     */
 
     PandarGeneralSDK pandarGeneral(
-        std::string("../test/test_data/Turning_Left_Pandar64.pcap"),
+        "",
+        0,
+        0,
+        "../test/test_data/Turning_Left_Pandar64.pcap",
         lidarCallback,
+        nullptr,
         0,
         0,
-        std::string("Pandar64"),
-        std::string("frame_id"),
+        "Pandar64",
+        "frame_id",
         "");
     std::string filePath = "../test/test_data/angle_correction_Pandar64.csv";
     std::ifstream fin(filePath);

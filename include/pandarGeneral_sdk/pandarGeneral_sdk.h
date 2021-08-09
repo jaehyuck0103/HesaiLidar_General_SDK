@@ -42,6 +42,7 @@ class PandarGeneralSDK {
         std::string device_ip,
         const uint16_t lidar_port,
         const uint16_t gps_port,
+        std::string pcap_path,
         std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
@@ -49,24 +50,7 @@ class PandarGeneralSDK {
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time
-    /**
-     * @brief Constructor
-     * @param pcap_path         The path of pcap file
-     *        pcl_callback      The callback of PCL data structure
-     *        start_angle       The start angle of every point cloud
-     *                          should be <real angle> * 100.
-     *        tz                The timezone
-     *        lidar_type        The model of the lidar
-     *        frame_id          The id of the point cloud data published to ROS
-     */
-    PandarGeneralSDK(
-        std::string pcap_path,
-        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
-        uint16_t start_angle,
-        int tz,
-        std::string lidar_type,
-        std::string frame_id,
-        std::string timestampType); // the default timestamp type is LiDAR time
+
     ~PandarGeneralSDK();
 
     int LoadLidarCorrectionFile(std::string correction_content);
