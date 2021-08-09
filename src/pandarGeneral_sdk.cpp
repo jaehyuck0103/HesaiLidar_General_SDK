@@ -22,7 +22,9 @@
 #include "pandar/tcp_command_client.h"
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
 
@@ -91,32 +93,44 @@ PandarGeneralSDK::PandarGeneralSDK(
         std::terminate();
     }
 
-    // Try to get calibration.
-    if (pcap_path.empty()) {
-        for (int i = 0; i < 5; ++i) {
-            if (getCalibrationFromDevice(device_ip)) {
+    // Try to get Angle Correction.
+    if (!device_ip.empty()) {
+        if (auto correction_content = getAngleCorrectionFromDevice(device_ip)) {
+
+            if (internal_->updateAngleCorrection(*correction_content)) {
+                std::cout << "Parse Lidar Correction Success\n";
                 return;
+            } else {
+                std::cout << "Fail to parse lidar correction\n";
+                std::terminate();
             }
+        } else {
+            std::terminate();
         }
-        std::terminate();
     }
 }
 
 PandarGeneralSDK::~PandarGeneralSDK() { Stop(); }
 
-int PandarGeneralSDK::LoadLidarCorrectionFile(std::string file) {
-    return internal_->LoadCorrectionFile(file);
-}
+bool PandarGeneralSDK::updateAngleCorrectionByFile(std::string filePath) {
 
-std::string PandarGeneralSDK::GetLidarCalibration() { return correction_content_; }
+    std::ifstream fin(filePath);
+    std::ostringstream strStream;
+    strStream << fin.rdbuf();
+    fin.close();
+
+    return internal_->updateAngleCorrection(strStream.str());
+}
 
 void PandarGeneralSDK::Start() {
     Stop();
     internal_->Start();
 }
+
 void PandarGeneralSDK::Stop() { internal_->Stop(); }
 
-bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
+std::optional<std::string>
+PandarGeneralSDK::getAngleCorrectionFromDevice(const std::string &device_ip) {
 
     // Dual Check
     auto [ec, feedback] = TcpCommand::getLidarCalibration(device_ip, PANDAR_TCP_COMMAND_PORT);
@@ -124,23 +138,15 @@ bool PandarGeneralSDK::getCalibrationFromDevice(const std::string &device_ip) {
 
     if (ec != TcpCommand::PTC_ErrCode::NO_ERROR || ec2 != TcpCommand::PTC_ErrCode::NO_ERROR) {
         std::cout << "Fail to get correction content\n";
-        return false;
+        return std::nullopt;
     }
 
     std::string correction_content(feedback.payload.begin(), feedback.payload.end());
     std::string correction_content2(feedback2.payload.begin(), feedback2.payload.end());
     if (correction_content != correction_content2) {
         std::cout << "Fail to pass the dual check\n";
-        return false;
-    }
-
-    int ret = internal_->LoadCorrectionFile(correction_content);
-    if (ret != 0) {
-        std::cout << "Fail to parse lidar correction\n";
-        return false;
+        return nullopt;
     } else {
-        std::cout << "Parse Lidar Correction Success\n";
-        correction_content_ = correction_content;
-        return true;
+        return correction_content;
     }
 }

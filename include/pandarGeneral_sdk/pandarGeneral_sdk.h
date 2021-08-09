@@ -28,9 +28,9 @@ class PandarGeneralSDK {
   public:
     /**
      * @brief Constructor
-     * @param device_ip  				The ip of the device
-     *        lidar_port 				The port number of lidar data
-     *        gps_port   				The port number of gps data
+     * @param device_ip  		The ip of the device
+     *        lidar_port 		The port number of lidar data
+     *        gps_port   		The port number of gps data
      *        pcl_callback      The callback of PCL data structure
      *        gps_callback      The callback of GPS structure
      *        start_angle       The start angle of every point cloud
@@ -53,13 +53,12 @@ class PandarGeneralSDK {
 
     ~PandarGeneralSDK();
 
-    int LoadLidarCorrectionFile(std::string correction_content);
-    std::string GetLidarCalibration();
+    bool updateAngleCorrectionByFile(std::string correction_path);
+    std::optional<std::string> getAngleCorrectionFromDevice(const std::string &device_ip);
+
     void Start();
     void Stop();
 
   private:
     std::unique_ptr<PandarGeneral_Internal> internal_;
-    std::string correction_content_;
-    bool getCalibrationFromDevice(const std::string &device_ip);
 };

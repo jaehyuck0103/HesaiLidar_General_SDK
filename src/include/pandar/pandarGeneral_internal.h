@@ -85,7 +85,7 @@ class PandarGeneral_Internal {
 
     virtual ~PandarGeneral_Internal();
 
-    int LoadCorrectionFile(std::string correction);
+    bool updateAngleCorrection(std::string correction_content);
 
     void Start();
     void Stop();

@@ -39,64 +39,64 @@ PandarGeneral_Internal::PandarGeneral_Internal(
         pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
     }
 
-    start_angle_ = start_angle;
     pcl_callback_ = pcl_callback;
     gps_callback_ = gps_callback;
+    start_angle_ = start_angle;
+    tz_second_ = tz * 3600;
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
-    tz_second_ = tz * 3600;
     m_sTimestampType = timestampType;
 }
 
 PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
 
-int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
+bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_content) {
+
+    std::cout << "Parse Lidar Correction...\n";
+
+    std::vector<float> elev_angle;
+    std::vector<float> azimuth_offset;
+
     std::istringstream ifs(correction_content);
-
     std::string line;
-    if (std::getline(ifs, line)) { // first line "Laser id,Elevation,Azimuth"
-        std::cout << "Parse Lidar Correction..." << std::endl;
-    }
+    std::getline(ifs, line); // Throw away first line
 
-    constexpr int HS_LIDAR_L64_UNIT_NUM = 64; // temp
-    double azimuthOffset[HS_LIDAR_L64_UNIT_NUM];
-    double elev_angle[HS_LIDAR_L64_UNIT_NUM];
+    for (int lineCounter = 1; std::getline(ifs, line); ++lineCounter) {
 
-    int lineCounter = 0;
-    while (std::getline(ifs, line)) {
-        // correction file has 3 columns, min length is len(0,0,0)
+        // correction file has 3 columns, min length is 5
         if (line.length() < 5) {
             break;
         }
-        lineCounter++;
 
-        int lineId = 0;
-        double elev, azimuth;
-
-        std::stringstream ss(line);
+        std::istringstream ss{line};
         std::string subline;
+
         std::getline(ss, subline, ',');
-        std::stringstream(subline) >> lineId;
+        int lineId = stoi(subline);
         std::getline(ss, subline, ',');
-        std::stringstream(subline) >> elev;
+        float elev = stof(subline);
         std::getline(ss, subline, ',');
-        std::stringstream(subline) >> azimuth;
+        float azimuth = stof(subline);
 
         if (lineId != lineCounter) {
             break;
         }
 
-        elev_angle[lineId - 1] = elev;
-        azimuthOffset[lineId - 1] = azimuth;
+        elev_angle.push_back(elev);
+        azimuth_offset.push_back(azimuth);
     }
 
-    for (int i = 0; i < lineCounter; ++i) {
-        /* for all the laser offset */
-        elev_angle_map_[i] = elev_angle[i];
-        azimuth_offset_map_[i] = azimuthOffset[i];
-    }
+    if (elev_angle.size() == static_cast<size_t>(num_lasers_) &&
+        azimuth_offset.size() == static_cast<size_t>(num_lasers_)) {
 
-    return 0;
+        elev_angle_map_ = elev_angle;
+        azimuth_offset_map_ = azimuth_offset;
+        std::cout << "Parse Lidar Correction Succeed...\n";
+        return true;
+    } else {
+        std::cout << "Parse Lidar Correction Failed...\n";
+        return false;
+    }
 }
 
 void PandarGeneral_Internal::Start() {

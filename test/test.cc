@@ -59,19 +59,11 @@ int main() {
         "Pandar64",
         "frame_id",
         "");
-    std::string filePath = "../test/test_data/angle_correction_Pandar64.csv";
-    std::ifstream fin(filePath);
-    int length = 0;
-    std::string strlidarCalibration;
-    fin.seekg(0, std::ios::end);
-    length = fin.tellg();
-    fin.seekg(0, std::ios::beg);
-    char *buffer = new char[length];
-    fin.read(buffer, length);
-    fin.close();
-    strlidarCalibration = buffer;
-    pandarGeneral.LoadLidarCorrectionFile(strlidarCalibration);
 
+    std::string correctionFilePath = "../test/test_data/angle_correction_Pandar64.csv";
+    if (!pandarGeneral.updateAngleCorrectionByFile(correctionFilePath)) {
+        std::terminate();
+    }
     pandarGeneral.Start();
 
     while (true) {
