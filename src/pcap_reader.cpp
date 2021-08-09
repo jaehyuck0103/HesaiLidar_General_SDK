@@ -1,5 +1,7 @@
 #include "pandar/pcap_reader.h"
-#include "pandar/util.h"
+
+#include <chrono>
+#include <iostream>
 #include <map>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -104,9 +106,9 @@ void PcapReader::parsePcap() {
     while (pcap_next_ex(pcapFile, &pktHeader, &packetBuf) >= 0 && loop) {
         const uint8_t *packet = packetBuf + PKT_HEADER_SIZE;
         int pktSize = pktHeader->len - PKT_HEADER_SIZE;
-        double time = getNowTimeSec();
-        // printf("Real time: %lf\n",time);
-        callback(packet, pktSize, time);
+        std::chrono::duration<double> time = std::chrono::system_clock::now().time_since_epoch();
+
+        callback(packet, pktSize, time.count());
         count++;
 
         if (count >= gap && m_iUTCIndex != 0) {

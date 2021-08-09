@@ -18,7 +18,6 @@ add_library(
   src/input.cpp
   src/pandarGeneral_internal.cpp
   src/tcp_command_client.cpp
-  src/util.cpp
   src/pcap_reader.cpp
   src/pandar40P.cpp
   src/pandar64.cpp

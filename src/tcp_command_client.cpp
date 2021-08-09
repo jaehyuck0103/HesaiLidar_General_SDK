@@ -15,13 +15,64 @@
  *****************************************************************************/
 
 #include "pandar/tcp_command_client.h"
-#include "pandar/util.h"
+
+#include <arpa/inet.h>
 #include <array>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <unistd.h>
 
 namespace TcpCommand {
+
+int sys_readn(int fd, unsigned char *vptr, int n) {
+    // printf("start sys_readn: %d....\n", n);
+    int nleft, nread;
+    unsigned char *ptr;
+
+    ptr = vptr;
+    nleft = n;
+    while (nleft > 0) {
+        // printf("start read\n");
+        if ((nread = read(fd, ptr, nleft)) < 0) {
+            if (errno == EINTR)
+                nread = 0;
+            else
+                return -1;
+        } else if (nread == 0) {
+            break;
+        }
+        // printf("end read, read: %d\n", nread);
+        nleft -= nread;
+        ptr += nread;
+    }
+    // printf("stop sys_readn....\n");
+
+    return n - nleft;
+}
+
+int tcp_open(const char *ipaddr, int port) {
+    int sockfd;
+    struct sockaddr_in servaddr;
+
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        return -1;
+
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(port);
+    if (inet_pton(AF_INET, ipaddr, &servaddr.sin_addr) <= 0) {
+        close(sockfd);
+        return -1;
+    }
+
+    if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
+        close(sockfd);
+        return -1;
+    }
+
+    return sockfd;
+}
 
 void print_mem(std::vector<uint8_t> mem) {
 #ifdef DEBUG

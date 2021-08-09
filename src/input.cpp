@@ -15,19 +15,16 @@
  *****************************************************************************/
 
 #include "pandar/input.h"
-#include "pandar/util.h"
 
 #include <arpa/inet.h>
+#include <chrono>
+#include <cstring>
 #include <errno.h>
 #include <fcntl.h>
-#include <iostream>
 #include <poll.h>
 #include <sstream>
-#include <string.h>
 #include <sys/file.h>
 #include <sys/socket.h>
-#include <sys/time.h>
-#include <time.h>
 
 Input::Input(uint16_t port, uint16_t gpsPort) {
     socketForLidar = -1;
@@ -107,6 +104,7 @@ Input::~Input(void) {
 //          1 - gps
 //          -1 - error
 int Input::getPacket(PandarPacket *pkt) {
+
     struct pollfd fds[socketNumber];
     if (socketNumber == 2) {
         fds[0].fd = socketForGPS;
@@ -118,8 +116,8 @@ int Input::getPacket(PandarPacket *pkt) {
         fds[0].fd = socketForLidar;
         fds[0].events = POLLIN;
     }
-    static const int POLL_TIMEOUT = 1000; // one second (in msec)
 
+    constexpr int POLL_TIMEOUT = 1000; // one second (in msec)
     sockaddr_in senderAddress;
     socklen_t senderAddressLen = sizeof(senderAddress);
     int retval = poll(fds, socketNumber, POLL_TIMEOUT);
@@ -138,10 +136,9 @@ int Input::getPacket(PandarPacket *pkt) {
     }
 
     senderAddressLen = sizeof(senderAddress);
-    ssize_t nbytes;
-    double time = getNowTimeSec();
-    // printf("Real time: %lf\n",time);
-    for (int i = 0; i != socketNumber; ++i) {
+    int nbytes;
+    std::chrono::duration<double> stamp = std::chrono::system_clock::now().time_since_epoch();
+    for (int i = 0; i < socketNumber; ++i) {
         if (fds[i].revents & POLLIN) {
             nbytes = recvfrom(
                 fds[i].fd,
@@ -161,7 +158,7 @@ int Input::getPacket(PandarPacket *pkt) {
         }
     }
     pkt->size = nbytes;
-    pkt->stamp = time;
+    pkt->stamp = stamp.count();
 
     return 0;
 }
