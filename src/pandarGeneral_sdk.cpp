@@ -151,10 +151,6 @@ int PandarGeneralSDK::LoadLidarCorrectionFile(std::string file) {
     return internal_->LoadCorrectionFile(file);
 }
 
-void PandarGeneralSDK::ResetLidarStartAngle(uint16_t start_angle) {
-    internal_->ResetStartAngle(start_angle);
-}
-
 std::string PandarGeneralSDK::GetLidarCalibration() { return correction_content_; }
 
 void PandarGeneralSDK::Start() {

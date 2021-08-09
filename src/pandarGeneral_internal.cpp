@@ -126,8 +126,6 @@ int PandarGeneral_Internal::LoadCorrectionFile(std::string correction_content) {
     return 0;
 }
 
-void PandarGeneral_Internal::ResetStartAngle(uint16_t start_angle) { start_angle_ = start_angle; }
-
 void PandarGeneral_Internal::Start() {
     Stop();
     enable_lidar_recv_thr_ = true;

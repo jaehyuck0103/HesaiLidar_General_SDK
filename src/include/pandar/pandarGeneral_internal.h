@@ -121,12 +121,6 @@ class PandarGeneral_Internal {
      */
     int LoadCorrectionFile(std::string correction);
 
-    /**
-     * @brief load the correction file
-     * @param angle The start angle
-     */
-    void ResetStartAngle(uint16_t start_angle);
-
     void Start();
     void Stop();
 

@@ -70,7 +70,6 @@ class PandarGeneralSDK {
     ~PandarGeneralSDK();
 
     int LoadLidarCorrectionFile(std::string correction_content);
-    void ResetLidarStartAngle(uint16_t start_angle);
     std::string GetLidarCalibration();
     void Start();
     void Stop();
