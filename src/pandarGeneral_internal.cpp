@@ -16,6 +16,8 @@
 
 #include "pandar/pandarGeneral_internal.h"
 
+#include "pandar/pcap_reader.h"
+
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -28,7 +30,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
-    int tz,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -42,7 +43,6 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     pcl_callback_ = pcl_callback;
     gps_callback_ = gps_callback;
     start_angle_ = start_angle;
-    tz_second_ = tz * 3600;
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
     m_sTimestampType = timestampType;
@@ -180,22 +180,17 @@ void PandarGeneral_Internal::ProcessLidarPacket(const PandarPacket &packet) {
 }
 
 void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
-    tm t;
-    t.tm_sec = gpsMsg.second;
-    t.tm_min = gpsMsg.minute;
-
-    t.tm_hour = gpsMsg.hour;
+    std::tm t;
+    t.tm_year = gpsMsg.year + 100; // years since 1900
+    t.tm_mon = gpsMsg.month - 1;   // [0, 11]
     t.tm_mday = gpsMsg.day;
-
-    // UTC's month start from 1, but mktime only accept month from 0.
-    t.tm_mon = gpsMsg.month - 1;
-    // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
-    // and mktime's year start from 1900 which is 0. so we need add 100 year.
-    t.tm_year = gpsMsg.year + 100;
+    t.tm_hour = gpsMsg.hour;
+    t.tm_min = gpsMsg.minute;
+    t.tm_sec = gpsMsg.second;
     t.tm_isdst = 0;
 
     if (gps_callback_) {
-        gps_callback_(static_cast<double>(mktime(&t) + tz_second_));
+        gps_callback_(static_cast<double>(std::mktime(&t)));
     }
 }
 
@@ -231,26 +226,6 @@ void PandarGeneral_Internal::CalcPointXYZIT(
 
     const HS_LIDAR_Block &block = pkt.blocks[blockid];
 
-    tm tTm;
-    // UTC's year only include 0 - 99 year , which indicate 2000 to 2099.
-    // and mktime's year start from 1900 which is 0. so we need add 100 year.
-    tTm.tm_year = pkt.UTC[0] + 100;
-
-    // in case of time error
-    if (tTm.tm_year >= 200) {
-        tTm.tm_year -= 100;
-    }
-
-    // UTC's month start from 1, but mktime only accept month from 0.
-    tTm.tm_mon = pkt.UTC[1] - 1;
-    tTm.tm_mday = pkt.UTC[2];
-    tTm.tm_hour = pkt.UTC[3];
-    tTm.tm_min = pkt.UTC[4];
-    tTm.tm_sec = pkt.UTC[5];
-    tTm.tm_isdst = 0;
-
-    double unix_second = static_cast<double>(mktime(&tTm) + tz_second_);
-
     for (int i = 0; i < num_lasers_; ++i) {
         /* for all the units in a block */
         const HS_LIDAR_Unit &unit = block.units[i];
@@ -276,17 +251,15 @@ void PandarGeneral_Internal::CalcPointXYZIT(
         if ("realtime" == m_sTimestampType) {
             point.timestamp = pktRcvTimestamp;
         } else {
-            point.timestamp = unix_second + (static_cast<double>(pkt.timestamp)) / 1000000.0;
-
             if (pkt.returnMode >= 0x39) {
                 // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
                 point.timestamp =
-                    point.timestamp +
+                    pkt.timestamp +
                     (static_cast<double>(blockOffsetDual_[blockid] + laserOffset_[i]) /
                      1000000.0f);
             } else {
                 point.timestamp =
-                    point.timestamp +
+                    pkt.timestamp +
                     (static_cast<double>(blockOffsetSingle_[blockid] + laserOffset_[i]) /
                      1000000.0f);
             }

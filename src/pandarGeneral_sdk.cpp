@@ -36,7 +36,6 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
-    int tz,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType) {
@@ -49,7 +48,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             gps_callback,
             start_angle,
-            tz,
             lidar_type,
             frame_id,
             timestampType);
@@ -61,7 +59,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             gps_callback,
             start_angle,
-            tz,
             lidar_type,
             frame_id,
             timestampType);
@@ -73,7 +70,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             gps_callback,
             start_angle,
-            tz,
             lidar_type,
             frame_id,
             timestampType);
@@ -85,7 +81,6 @@ PandarGeneralSDK::PandarGeneralSDK(
             pcl_callback,
             gps_callback,
             start_angle,
-            tz,
             lidar_type,
             frame_id,
             timestampType);
@@ -145,7 +140,7 @@ PandarGeneralSDK::getAngleCorrectionFromDevice(const std::string &device_ip) {
     std::string correction_content2(feedback2.payload.begin(), feedback2.payload.end());
     if (correction_content != correction_content2) {
         std::cout << "Fail to pass the dual check\n";
-        return nullopt;
+        return std::nullopt;
     } else {
         return correction_content;
     }

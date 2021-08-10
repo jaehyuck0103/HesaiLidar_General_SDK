@@ -106,16 +106,12 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const uint8_t *recvbuf
     index += HS_LIDAR_XT_ECHO_SIZE;
     index += HS_LIDAR_XT_ENGINE_VELOCITY;
 
-    packet.UTC[0] = recvbuf[index];
-    packet.UTC[1] = recvbuf[index + 1];
-    packet.UTC[2] = recvbuf[index + 2];
-    packet.UTC[3] = recvbuf[index + 3];
-    packet.UTC[4] = recvbuf[index + 4];
-    packet.UTC[5] = recvbuf[index + 5];
+    packet.timestamp = parseUTC(&recvbuf[index]);
     index += HS_LIDAR_XT_UTC_SIZE;
 
-    packet.timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
-                       recvbuf[index + 3] << 24;
+    uint32_t timestamp_us = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
+                            recvbuf[index + 3] << 24;
+    packet.timestamp += timestamp_us / 1000000.0;
 
     return packet;
 }

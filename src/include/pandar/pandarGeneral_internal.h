@@ -17,19 +17,34 @@
 #pragma once
 
 #include "input.h"
-#include "pcap_reader.h"
-
 #include "pandarGeneral_sdk/point_types.h"
 
+#include <functional>
 #include <list>
 #include <string>
 #include <thread>
+#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+class PcapReader;
+
 inline constexpr double degToRad(double degree) { return degree * M_PI / 180; }
+
+inline double parseUTC(const uint8_t *buf) {
+    std::tm tTm;
+    tTm.tm_year = buf[0] + 100; // years since 1900
+    tTm.tm_mon = buf[1] - 1;    // years since 1900
+    tTm.tm_mday = buf[2];
+    tTm.tm_hour = buf[3];
+    tTm.tm_min = buf[4];
+    tTm.tm_sec = buf[5];
+    tTm.tm_isdst = 0;
+
+    return static_cast<double>(std::mktime(&tTm));
+}
 
 struct HS_LIDAR_Unit {
     uint16_t rawDistance; // distance (meter) = rawDistance * 0.004
@@ -43,8 +58,7 @@ struct HS_LIDAR_Block {
 
 struct HS_LIDAR_Packet {
     std::vector<HS_LIDAR_Block> blocks;
-    std::array<uint8_t, 6> UTC; // Year, month, date, hour, minitiue, second
-    uint32_t timestamp;         // 0 ~ 1000000 us (1s)
+    double timestamp;
     uint8_t returnMode;
 };
 
@@ -78,7 +92,6 @@ class PandarGeneral_Internal {
         std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
-        int tz,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType);
@@ -122,7 +135,6 @@ class PandarGeneral_Internal {
     std::vector<float> blockOffsetDual_;
     std::vector<float> laserOffset_;
 
-    int tz_second_;
     std::string m_sTimestampType;
     std::string m_sLidarType;
 

@@ -39,7 +39,7 @@ void lidarCallback(std::vector<PointXYZIT> cld, double timestamp) {
 void pcapTest(std::string lidarType, std::string pcapPath, std::string angleCorrectionPath) {
 
     PandarGeneralSDK
-        pandarGeneral("", 0, 0, pcapPath, lidarCallback, nullptr, 0, 0, lidarType, "frame_id", "");
+        pandarGeneral("", 0, 0, pcapPath, lidarCallback, nullptr, 0, lidarType, "frame_id", "");
 
     if (!pandarGeneral.updateAngleCorrectionByFile(angleCorrectionPath)) {
         std::terminate();
