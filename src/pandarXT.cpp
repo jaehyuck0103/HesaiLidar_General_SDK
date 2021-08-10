@@ -55,11 +55,11 @@ int PandarXT::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const i
 
     int index = 0;
     // Parse 12 Bytes Header
-    uint16_t sop = (recvbuf[index] & 0xff) << 8 | ((recvbuf[index + 1] & 0xff));
-    uint8_t protocolVerMajor = recvbuf[index + 2] & 0xff;
-    uint8_t nLasers = recvbuf[index + 6] & 0xff; // 32 or 16
-    uint8_t nBlocks = recvbuf[index + 7] & 0xff; // 8
-    uint8_t disUnit = recvbuf[index + 9] & 0xff; // 4 (mm)
+    uint16_t sop = recvbuf[index] << 8 | recvbuf[index + 1];
+    uint8_t protocolVerMajor = recvbuf[index + 2];
+    uint8_t nLasers = recvbuf[index + 6]; // 32 or 16
+    uint8_t nBlocks = recvbuf[index + 7]; // 8
+    uint8_t disUnit = recvbuf[index + 9]; // 4 (mm)
     index += HS_LIDAR_XT_HEAD_SIZE;
 
     if (sop != 0xEEFF) {
@@ -87,38 +87,37 @@ int PandarXT::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const i
 
     packet->blocks.resize(nBlocks);
     for (int block = 0; block < nBlocks; block++) {
-        packet->blocks[block].azimuth =
-            (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
+        packet->blocks[block].azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
         index += HS_LIDAR_XT_BLOCK_HEADER_AZIMUTH;
 
         packet->blocks[block].units.resize(nLasers);
         for (int unit = 0; unit < nLasers; unit++) {
-            uint16_t unRange = (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
+            uint16_t unRange = recvbuf[index] | recvbuf[index + 1] << 8;
 
             packet->blocks[block].units[unit].distance =
                 static_cast<double>(unRange) * static_cast<double>(disUnit) / 1000.0;
-            packet->blocks[block].units[unit].intensity = (recvbuf[index + 2] & 0xff);
+            packet->blocks[block].units[unit].intensity = recvbuf[index + 2];
             index += HS_LIDAR_XT_UNIT_SIZE;
         }
     }
 
     index += HS_LIDAR_XT_RESERVED_SIZE;
 
-    packet->returnMode = recvbuf[index] & 0xff;
+    packet->returnMode = recvbuf[index];
 
     index += HS_LIDAR_XT_ECHO_SIZE;
     index += HS_LIDAR_XT_ENGINE_VELOCITY;
 
-    packet->UTC[0] = recvbuf[index] & 0xff;
-    packet->UTC[1] = recvbuf[index + 1] & 0xff;
-    packet->UTC[2] = recvbuf[index + 2] & 0xff;
-    packet->UTC[3] = recvbuf[index + 3] & 0xff;
-    packet->UTC[4] = recvbuf[index + 4] & 0xff;
-    packet->UTC[5] = recvbuf[index + 5] & 0xff;
+    packet->UTC[0] = recvbuf[index];
+    packet->UTC[1] = recvbuf[index + 1];
+    packet->UTC[2] = recvbuf[index + 2];
+    packet->UTC[3] = recvbuf[index + 3];
+    packet->UTC[4] = recvbuf[index + 4];
+    packet->UTC[5] = recvbuf[index + 5];
     index += HS_LIDAR_XT_UTC_SIZE;
 
-    packet->timestamp = (recvbuf[index] & 0xff) | (recvbuf[index + 1] & 0xff) << 8 |
-                        ((recvbuf[index + 2] & 0xff) << 16) | ((recvbuf[index + 3] & 0xff) << 24);
+    packet->timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
+                        recvbuf[index + 3] << 24;
 
     return 0;
 }
