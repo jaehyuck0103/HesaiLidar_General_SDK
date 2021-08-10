@@ -67,5 +67,6 @@ class PandarXT : public PandarGeneral_Internal {
   private:
     void Init();
 
-    virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) final;
+    virtual std::optional<HS_LIDAR_Packet>
+    parseLidarPacket(const uint8_t *recvbuf, const int len) final;
 };

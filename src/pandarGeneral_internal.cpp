@@ -157,28 +157,25 @@ void PandarGeneral_Internal::ProcessLidarPacket(const PandarPacket &packet) {
 
     static int last_azimuth = 0;
 
-    HS_LIDAR_Packet pkt;
-    int ret = ParseData(&pkt, packet.data, packet.size);
-    if (ret != 0) {
-        return;
-    }
+    if (auto pkt = parseLidarPacket(packet.data, packet.size)) {
 
-    for (size_t i = 0; i < pkt.blocks.size(); ++i) {
+        for (size_t i = 0; i < pkt->blocks.size(); ++i) {
 
-        int curr_azimuth = static_cast<int>(pkt.blocks[i].azimuth);
+            int curr_azimuth = static_cast<int>(pkt->blocks[i].azimuth);
 
-        if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
-            (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
-            (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
+            if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
+                (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
+                (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
 
-            if (pcl_callback_ && PointCloudList.size() > 0) {
-                pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
-                PointCloudList.clear();
+                if (pcl_callback_ && PointCloudList.size() > 0) {
+                    pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
+                    PointCloudList.clear();
+                }
             }
-        }
 
-        CalcPointXYZIT(pkt, i, packet.stamp);
-        last_azimuth = curr_azimuth;
+            CalcPointXYZIT(*pkt, i, packet.stamp);
+            last_azimuth = curr_azimuth;
+        }
     }
 }
 

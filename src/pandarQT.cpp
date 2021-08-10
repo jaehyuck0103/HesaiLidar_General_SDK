@@ -107,10 +107,10 @@ void PandarQT::Init() {
     num_lasers_ = 64;
 }
 
-int PandarQT::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) {
+std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const uint8_t *recvbuf, const int len) {
     if (len != HS_LIDAR_QT_PACKET_SIZE && len != HS_LIDAR_QT_PACKET_WITHOUT_UDPSEQ_SIZE) {
         std::cout << "Packet Size Mismatch (PandarQT): " << len << "\n";
-        return -1;
+        return std::nullopt;
     }
 
     int index = 0;
@@ -125,37 +125,38 @@ int PandarQT::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const i
 
     if (sop != 0xEEFF) {
         std::cout << "Error Start of Packet!\n";
-        return -1;
+        return std::nullopt;
     }
     if (protocolVerMajor != 0x03) {
         std::cout << "Error protocalVerMajor!\n";
-        return -1;
+        return std::nullopt;
     }
     if (nLasers != 0x40) {
         std::cout << "Error nLasers!\n";
-        return -1;
+        return std::nullopt;
     }
     if (nBlocks != 0x04) {
         std::cout << "Error nBlocks!\n";
-        return -1;
+        return std::nullopt;
     }
     if (disUnit != 0x04) {
         std::cout << "Error disUnit!\n";
-        return -1;
+        return std::nullopt;
     }
 
-    packet->blocks.resize(nBlocks);
+    HS_LIDAR_Packet packet;
+    packet.blocks.resize(nBlocks);
     for (int block = 0; block < nBlocks; block++) {
-        packet->blocks[block].azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
+        packet.blocks[block].azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
         index += HS_LIDAR_QT_BLOCK_HEADER_AZIMUTH;
 
-        packet->blocks[block].units.resize(nLasers);
+        packet.blocks[block].units.resize(nLasers);
         for (int unit = 0; unit < nLasers; unit++) {
             uint16_t unRange = recvbuf[index] | recvbuf[index + 1] << 8;
 
-            packet->blocks[block].units[unit].distance =
+            packet.blocks[block].units[unit].distance =
                 static_cast<double>(unRange) * static_cast<double>(disUnit) / 1000.0;
-            packet->blocks[block].units[unit].intensity = recvbuf[index + 2];
+            packet.blocks[block].units[unit].intensity = recvbuf[index + 2];
             index += HS_LIDAR_QT_UNIT_SIZE;
         }
     }
@@ -163,23 +164,23 @@ int PandarQT::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const i
     index += HS_LIDAR_QT_RESERVED_SIZE;
     index += HS_LIDAR_QT_ENGINE_VELOCITY;
 
-    packet->timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
-                        recvbuf[index + 3] << 24;
+    packet.timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
+                       recvbuf[index + 3] << 24;
     index += HS_LIDAR_QT_TIMESTAMP_SIZE;
 
-    packet->returnMode = recvbuf[index];
+    packet.returnMode = recvbuf[index];
 
     index += HS_LIDAR_QT_ECHO_SIZE;
     index += HS_LIDAR_QT_FACTORY_SIZE;
 
-    packet->UTC[0] = recvbuf[index];
-    packet->UTC[1] = recvbuf[index + 1];
-    packet->UTC[2] = recvbuf[index + 2];
-    packet->UTC[3] = recvbuf[index + 3];
-    packet->UTC[4] = recvbuf[index + 4];
-    packet->UTC[5] = recvbuf[index + 5];
+    packet.UTC[0] = recvbuf[index];
+    packet.UTC[1] = recvbuf[index + 1];
+    packet.UTC[2] = recvbuf[index + 2];
+    packet.UTC[3] = recvbuf[index + 3];
+    packet.UTC[4] = recvbuf[index + 4];
+    packet.UTC[5] = recvbuf[index + 5];
 
     index += HS_LIDAR_QT_UTC_SIZE;
 
-    return 0;
+    return packet;
 }

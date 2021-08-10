@@ -15,7 +15,11 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
+
 #include <pcl/visualization/cloud_viewer.h>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 pcl::visualization::CloudViewer viewer("Simple");
 
@@ -30,6 +34,19 @@ void lidarCallback(std::vector<PointXYZIT> cld, double timestamp) {
     }
 
     viewer.showCloud(cloud);
+}
+
+void pcapTest(std::string lidarType, std::string pcapPath, std::string angleCorrectionPath) {
+
+    PandarGeneralSDK
+        pandarGeneral("", 0, 0, pcapPath, lidarCallback, nullptr, 0, 0, lidarType, "frame_id", "");
+
+    if (!pandarGeneral.updateAngleCorrectionByFile(angleCorrectionPath)) {
+        std::terminate();
+    }
+    pandarGeneral.Start();
+
+    std::this_thread::sleep_for(5s);
 }
 
 int main() {
@@ -47,28 +64,20 @@ int main() {
         "");
     */
 
-    PandarGeneralSDK pandarGeneral(
-        "",
-        0,
-        0,
-        "../test/test_data/Turning_Left_Pandar64.pcap",
-        lidarCallback,
-        nullptr,
-        0,
-        0,
+    pcapTest(
         "Pandar64",
-        "frame_id",
-        "");
+        "../test/test_data/Turning_Left_Pandar64.pcap",
+        "../test/test_data/angle_correction_Pandar64.csv");
 
-    std::string correctionFilePath = "../test/test_data/angle_correction_Pandar64.csv";
-    if (!pandarGeneral.updateAngleCorrectionByFile(correctionFilePath)) {
-        std::terminate();
-    }
-    pandarGeneral.Start();
+    pcapTest(
+        "Pandar40P",
+        "../test/test_data/Freeway_Pandar40P.pcap",
+        "../test/test_data/correction file_Pandar40P.csv");
 
-    while (true) {
-        sleep(100);
-    }
+    pcapTest(
+        "PandarQT",
+        "../test/test_data/PandarQT_Crossroad.pcap",
+        "../test/test_data/PandarQT Correction file.csv");
 
     return 0;
 }

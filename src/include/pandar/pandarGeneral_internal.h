@@ -124,7 +124,8 @@ class PandarGeneral_Internal {
     std::string m_sTimestampType;
     std::string m_sLidarType;
 
-    virtual int ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) = 0;
+    virtual std::optional<HS_LIDAR_Packet>
+    parseLidarPacket(const uint8_t *recvbuf, const int len) = 0;
 
     void CalcPointXYZIT(const HS_LIDAR_Packet &pkt, int blockid, double pktRcvTimestamp);
 

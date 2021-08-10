@@ -85,19 +85,20 @@ void Pandar40P::Init() {
     num_lasers_ = 40;
 }
 
-int Pandar40P::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const int len) {
+std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const uint8_t *recvbuf, const int len) {
     if (len != HS_LIDAR_L40_PACKET_SIZE &&
         len != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
         std::cout << "Packet Size Mismatch (Pandar40): " << len << "\n";
-        return -1;
+        return std::nullopt;
     }
 
     int index = 0;
+    HS_LIDAR_Packet packet;
     // 10 BLOCKs
-    packet->blocks.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
+    packet.blocks.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
     for (int i = 0; i < HS_LIDAR_L40_BLOCKS_PER_PACKET; i++) {
 
-        HS_LIDAR_Block &block = packet->blocks[i];
+        HS_LIDAR_Block &block = packet.blocks[i];
 
         uint16_t sob = recvbuf[index] | recvbuf[index + 1] << 8;
         block.azimuth = recvbuf[index + 2] | recvbuf[index + 3] << 8;
@@ -105,7 +106,7 @@ int Pandar40P::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const 
 
         if (sob != 0xEEFF) {
             std::cout << "Error Start of Block!\n";
-            return -1;
+            return std::nullopt;
         }
 
         // 40 units
@@ -125,22 +126,22 @@ int Pandar40P::ParseData(HS_LIDAR_Packet *packet, const uint8_t *recvbuf, const 
     index += HS_LIDAR_L40_RESERVE_SIZE;
     index += HS_LIDAR_L40_REVOLUTION_SIZE;
 
-    packet->timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
-                        recvbuf[index + 3] << 24;
+    packet.timestamp = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
+                       recvbuf[index + 3] << 24;
     index += HS_LIDAR_L40_TIMESTAMP_SIZE;
 
-    packet->returnMode = recvbuf[index];
+    packet.returnMode = recvbuf[index];
 
     index += HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE;
 
-    packet->UTC[0] = recvbuf[index];
-    packet->UTC[1] = recvbuf[index + 1];
-    packet->UTC[2] = recvbuf[index + 2];
-    packet->UTC[3] = recvbuf[index + 3];
-    packet->UTC[4] = recvbuf[index + 4];
-    packet->UTC[5] = recvbuf[index + 5];
+    packet.UTC[0] = recvbuf[index];
+    packet.UTC[1] = recvbuf[index + 1];
+    packet.UTC[2] = recvbuf[index + 2];
+    packet.UTC[3] = recvbuf[index + 3];
+    packet.UTC[4] = recvbuf[index + 4];
+    packet.UTC[5] = recvbuf[index + 5];
 
     index += HS_LIDAR_L40_UTC_TIME;
 
-    return 0;
+    return packet;
 }
