@@ -22,7 +22,6 @@
 #define HS_LIDAR_L40_PACKET_SIZE                                                                  \
     (HS_LIDAR_L40_BLOCK_SIZE * HS_LIDAR_L40_BLOCKS_PER_PACKET + HS_LIDAR_L40_INFO_SIZE +          \
      HS_LIDAR_L40_UTC_TIME)
-#define HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE (0.004)
 #define HS_LIDAR_L40_SEQ_NUM_SIZE (4)
 
 class Pandar40P : public PandarGeneral_Internal {

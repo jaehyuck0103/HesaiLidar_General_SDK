@@ -29,10 +29,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-inline constexpr double degreeToRadian(double degree) { return degree * M_PI / 180; }
+inline constexpr double degToRad(double degree) { return degree * M_PI / 180; }
 
 struct HS_LIDAR_Unit {
-    double distance;
+    uint16_t rawDistance; // distance (meter) = rawDistance * 0.004
     uint8_t intensity;
 };
 
@@ -111,6 +111,8 @@ class PandarGeneral_Internal {
 
     std::string frame_id_;
     std::unique_ptr<PcapReader> pcap_reader_;
+
+    static constexpr float disUnit_ = 0.004; // 4mm
 
   protected:
     std::vector<float> elev_angle_map_;

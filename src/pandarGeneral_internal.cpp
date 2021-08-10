@@ -256,22 +256,21 @@ void PandarGeneral_Internal::CalcPointXYZIT(
         const HS_LIDAR_Unit &unit = block.units[i];
         PointXYZIT point;
 
+        float distance = unit.rawDistance * disUnit_;
+
         /* skip wrong points */
-        if (unit.distance <= 0.1 || unit.distance > 200.0) {
+        if (distance < 0.1 || distance > 200.0) {
             continue;
         }
 
-        double xyDistance = unit.distance * cosf(degreeToRadian(elev_angle_map_[i]));
-        point.x = static_cast<float>(
+        float xyDistance = distance * cosf(degToRad(elev_angle_map_[i]));
+        point.x =
             xyDistance *
-            sinf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block.azimuth)) / 100.0)));
-        point.y = static_cast<float>(
+            sinf(degToRad(azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
+        point.y =
             xyDistance *
-            cosf(degreeToRadian(
-                azimuth_offset_map_[i] + (static_cast<double>(block.azimuth)) / 100.0)));
-        point.z = static_cast<float>(unit.distance * sinf(degreeToRadian(elev_angle_map_[i])));
-
+            cosf(degToRad(azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
+        point.z = distance * sinf(degToRad(elev_angle_map_[i]));
         point.intensity = unit.intensity;
 
         if ("realtime" == m_sTimestampType) {

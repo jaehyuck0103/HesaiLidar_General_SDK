@@ -96,9 +96,7 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const uint8_t *recvbu
     HS_LIDAR_Packet packet;
     // 10 BLOCKs
     packet.blocks.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
-    for (int i = 0; i < HS_LIDAR_L40_BLOCKS_PER_PACKET; i++) {
-
-        HS_LIDAR_Block &block = packet.blocks[i];
+    for (auto &block : packet.blocks) {
 
         uint16_t sob = recvbuf[index] | recvbuf[index + 1] << 8;
         block.azimuth = recvbuf[index + 2] | recvbuf[index + 3] << 8;
@@ -111,12 +109,9 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const uint8_t *recvbu
 
         // 40 units
         block.units.resize(HS_LIDAR_L40_LASER_COUNT);
-        for (int j = 0; j < HS_LIDAR_L40_LASER_COUNT; j++) {
-            HS_LIDAR_Unit &unit = block.units[j];
-            uint16_t range = recvbuf[index] | recvbuf[index + 1] << 8;
+        for (auto &unit : block.units) {
 
-            unit.distance =
-                static_cast<double>(range) * HS_LIDAR_L40_LASER_RETURN_TO_DISTANCE_RATE;
+            unit.rawDistance = recvbuf[index] | recvbuf[index + 1] << 8;
             unit.intensity = recvbuf[index + 2];
 
             index += HS_LIDAR_L40_RAW_MEASURE_SIZE;

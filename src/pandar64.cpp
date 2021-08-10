@@ -142,17 +142,14 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const uint8_t *recvbuf
 
     HS_LIDAR_Packet packet;
     packet.blocks.resize(nBlocks);
-    for (int block = 0; block < nBlocks; block++) {
-        packet.blocks[block].azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
+    for (auto &block : packet.blocks) {
+        block.azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
         index += HS_LIDAR_L64_BLOCK_HEADER_AZIMUTH;
 
-        packet.blocks[block].units.resize(nLasers);
-        for (int unit = 0; unit < nLasers; unit++) {
-            uint16_t unRange = recvbuf[index] | recvbuf[index + 1] << 8;
-
-            packet.blocks[block].units[unit].distance =
-                static_cast<double>(unRange) * static_cast<double>(disUnit) / 1000.0;
-            packet.blocks[block].units[unit].intensity = recvbuf[index + 2];
+        block.units.resize(nLasers);
+        for (auto &unit : block.units) {
+            unit.rawDistance = recvbuf[index] | recvbuf[index + 1] << 8;
+            unit.intensity = recvbuf[index + 2];
             index += HS_LIDAR_L64_UNIT_SIZE;
         }
     }
