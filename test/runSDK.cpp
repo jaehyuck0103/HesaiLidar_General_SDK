@@ -36,48 +36,19 @@ void lidarCallback(std::vector<PointXYZIT> cld, double timestamp) {
     viewer.showCloud(cloud);
 }
 
-void pcapTest(std::string lidarType, std::string pcapPath, std::string angleCorrectionPath) {
-
-    PandarGeneralSDK
-        pandarGeneral("", 0, 0, pcapPath, lidarCallback, nullptr, 0, lidarType, "frame_id", "");
-
-    if (!pandarGeneral.updateAngleCorrectionByFile(angleCorrectionPath)) {
-        std::terminate();
-    }
-    pandarGeneral.Start();
-
-    std::this_thread::sleep_for(5s);
-}
-
 int main() {
-    /*
     PandarGeneralSDK pandarGeneral(
-        std::string("192.168.1.201"),
+        "", // "192.168.1.201",
         2368,
         10110,
         lidarCallback,
         gpsCallback,
         0,
-        0,
-        std::string("PandarXT-32"),
+        std::string("Pandar64"),
         std::string("frame_id"),
         "");
-    */
-
-    pcapTest(
-        "Pandar64",
-        "../test/test_data/Turning_Left_Pandar64.pcap",
-        "../test/test_data/angle_correction_Pandar64.csv");
-
-    pcapTest(
-        "Pandar40P",
-        "../test/test_data/Freeway_Pandar40P.pcap",
-        "../test/test_data/correction file_Pandar40P.csv");
-
-    pcapTest(
-        "PandarQT",
-        "../test/test_data/PandarQT_Crossroad.pcap",
-        "../test/test_data/PandarQT Correction file.csv");
+    pandarGeneral.Start();
+    std::this_thread::sleep_for(100s);
 
     return 0;
 }

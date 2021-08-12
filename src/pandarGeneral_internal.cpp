@@ -16,8 +16,6 @@
 
 #include "pandar/pandarGeneral_internal.h"
 
-#include "pandar/pcap_reader.h"
-
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -26,7 +24,6 @@
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
     uint16_t gps_port,
-    std::string pcap_path,
     std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
@@ -34,11 +31,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::string frame_id,
     std::string timestampType) {
 
-    if (pcap_path.empty()) {
-        input_ = std::make_unique<Input>(lidar_port, gps_port);
-    } else {
-        pcap_reader_ = std::make_unique<PcapReader>(pcap_path, lidar_type);
-    }
+    input_ = std::make_unique<Input>(lidar_port, gps_port);
 
     pcl_callback_ = pcl_callback;
     gps_callback_ = gps_callback;
@@ -102,12 +95,7 @@ bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_conten
 void PandarGeneral_Internal::Start() {
     Stop();
     enable_lidar_recv_thr_ = true;
-
-    if (pcap_reader_) {
-        pcap_reader_->start([this](auto a, auto b, auto c) { FillPacket(a, b, c); });
-    } else {
-        lidar_recv_thr_ = std::make_unique<std::thread>(&PandarGeneral_Internal::RecvTask, this);
-    }
+    lidar_recv_thr_ = std::make_unique<std::thread>(&PandarGeneral_Internal::RecvTask, this);
 }
 
 void PandarGeneral_Internal::Stop() {
@@ -115,9 +103,6 @@ void PandarGeneral_Internal::Stop() {
 
     if (lidar_recv_thr_) {
         lidar_recv_thr_->join();
-    }
-    if (pcap_reader_) {
-        pcap_reader_->stop();
     }
 
     return;
@@ -140,16 +125,6 @@ void PandarGeneral_Internal::RecvTask() {
         } else {
             ProcessLidarPacket(pkt);
         }
-    }
-}
-
-void PandarGeneral_Internal::FillPacket(const uint8_t *buf, const int len, double timestamp) {
-    if (len != GPS_PACKET_SIZE) {
-        PandarPacket pkt;
-        memcpy(pkt.data, buf, len);
-        pkt.size = len;
-        pkt.stamp = timestamp;
-        ProcessLidarPacket(pkt);
     }
 }
 

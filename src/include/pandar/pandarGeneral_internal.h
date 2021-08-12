@@ -29,8 +29,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-class PcapReader;
-
 inline constexpr double degToRad(double degree) { return degree * M_PI / 180; }
 
 inline double parseUTC(const uint8_t *buf) {
@@ -88,7 +86,6 @@ class PandarGeneral_Internal {
     PandarGeneral_Internal(
         uint16_t lidar_port,
         uint16_t gps_port,
-        std::string pcap_path,
         std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
@@ -110,8 +107,6 @@ class PandarGeneral_Internal {
 
     int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
 
-    void FillPacket(const uint8_t *buf, const int len, double timestamp);
-
     std::unique_ptr<std::thread> lidar_recv_thr_;
     bool enable_lidar_recv_thr_ = false;
     int start_angle_;
@@ -123,7 +118,6 @@ class PandarGeneral_Internal {
     std::function<void(double timestamp)> gps_callback_;
 
     std::string frame_id_;
-    std::unique_ptr<PcapReader> pcap_reader_;
 
     static constexpr float disUnit_ = 0.004; // 4mm
 

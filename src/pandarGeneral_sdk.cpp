@@ -32,7 +32,6 @@ PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
     const uint16_t lidar_port,
     uint16_t gps_port,
-    std::string pcap_path,
     std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_angle,
@@ -44,7 +43,6 @@ PandarGeneralSDK::PandarGeneralSDK(
         internal_ = std::make_unique<Pandar40P>(
             lidar_port,
             gps_port,
-            pcap_path,
             pcl_callback,
             gps_callback,
             start_angle,
@@ -55,7 +53,6 @@ PandarGeneralSDK::PandarGeneralSDK(
         internal_ = std::make_unique<Pandar64>(
             lidar_port,
             gps_port,
-            pcap_path,
             pcl_callback,
             gps_callback,
             start_angle,
@@ -66,7 +63,6 @@ PandarGeneralSDK::PandarGeneralSDK(
         internal_ = std::make_unique<PandarQT>(
             lidar_port,
             gps_port,
-            pcap_path,
             pcl_callback,
             gps_callback,
             start_angle,
@@ -77,7 +73,6 @@ PandarGeneralSDK::PandarGeneralSDK(
         internal_ = std::make_unique<PandarXT>(
             lidar_port,
             gps_port,
-            pcap_path,
             pcl_callback,
             gps_callback,
             start_angle,
