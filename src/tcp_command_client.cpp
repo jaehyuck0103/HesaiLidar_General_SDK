@@ -16,87 +16,29 @@
 
 #include "pandar/tcp_command_client.h"
 
-#include <arpa/inet.h>
+#include <asio.hpp>
+
 #include <array>
-#include <cstring>
 #include <iomanip>
 #include <iostream>
-#include <unistd.h>
 
 namespace TcpCommand {
 
-int sys_readn(int fd, unsigned char *vptr, int n) {
-    // printf("start sys_readn: %d....\n", n);
-    int nleft, nread;
-    unsigned char *ptr;
-
-    ptr = vptr;
-    nleft = n;
-    while (nleft > 0) {
-        // printf("start read\n");
-        if ((nread = read(fd, ptr, nleft)) < 0) {
-            if (errno == EINTR)
-                nread = 0;
-            else
-                return -1;
-        } else if (nread == 0) {
-            break;
-        }
-        // printf("end read, read: %d\n", nread);
-        nleft -= nread;
-        ptr += nread;
-    }
-    // printf("stop sys_readn....\n");
-
-    return n - nleft;
-}
-
-int tcp_open(const char *ipaddr, int port) {
-    int sockfd;
-    struct sockaddr_in servaddr;
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-        return -1;
-
-    bzero(&servaddr, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port);
-    if (inet_pton(AF_INET, ipaddr, &servaddr.sin_addr) <= 0) {
-        close(sockfd);
-        return -1;
-    }
-
-    if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
-        close(sockfd);
-        return -1;
-    }
-
-    return sockfd;
-}
-
-void print_mem(std::vector<uint8_t> mem) {
-#ifdef DEBUG
-    for (uint8_t elem : mem) {
-        std::cout << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem)
-                  << " ";
-    }
-    std::cout << "\n";
-#else
-#endif
-}
-
-std::pair<PTC_ErrCode, TC_Command> readCommand(int connfd) {
+std::pair<PTC_ErrCode, TC_Command> readCommand(asio::ip::tcp::socket &socket) {
     std::cout << "tcpCommandReadCommand\n";
 
+    asio::error_code ec;
+    socket.wait(socket.wait_read);
+
     std::array<uint8_t, 2> buffer1;
-    if (int ret = sys_readn(connfd, buffer1.data(), buffer1.size());
+    if (int ret = socket.read_some(asio::buffer(buffer1), ec);
         ret != buffer1.size() || buffer1.at(0) != 0x47 || buffer1.at(1) != 0x74) {
         std::cout << "Receive feedback failed!!!\n";
         return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
 
     std::array<uint8_t, 6> buffer2;
-    if (int ret = sys_readn(connfd, buffer2.data(), buffer2.size()); ret != buffer2.size()) {
+    if (int ret = socket.read_some(asio::buffer(buffer2), ec); ret != buffer2.size()) {
         std::cout << "Receive feedback failed!!!\n";
         return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
@@ -114,14 +56,12 @@ std::pair<PTC_ErrCode, TC_Command> readCommand(int connfd) {
                            ((buffer2.at(4) & 0xff) << 8) | ((buffer2.at(5) & 0xff) << 0);
     if (len_payload > 0) {
         feedback.payload.resize(len_payload);
-        int ret = sys_readn(connfd, feedback.payload.data(), len_payload);
+        int ret = socket.read_some(asio::buffer(feedback.payload), ec);
         if (ret != static_cast<int>(len_payload)) {
             std::cout << "Receive payload failed!!!\n";
             return {PTC_ErrCode::TRANSFER_FAILED, {}};
         }
     }
-
-    print_mem(feedback.payload);
 
     return {PTC_ErrCode::NO_ERROR, feedback};
 }
@@ -143,34 +83,38 @@ std::pair<PTC_ErrCode, TC_Command>
 sendCmd(std::string device_ip, int device_port, const TC_Command &cmd) {
     std::cout << "tcpCommandClient_SendCmd\n";
 
-    int fd = tcp_open(device_ip.c_str(), device_port);
-    if (fd < 0) {
+    asio::error_code ec;
+    asio::io_context context;
+    asio::ip::tcp::endpoint endpoint{
+        asio::ip::make_address(device_ip, ec),
+        static_cast<uint16_t>(device_port)};
+    asio::ip::tcp::socket socket{context};
+    socket.connect(endpoint, ec);
+
+    if (!socket.is_open()) {
         return {PTC_ErrCode::CONNECT_SERVER_FAILED, {}};
     }
 
     // Send Command
     std::vector<uint8_t> buffer = buildHeader(cmd);
-    print_mem(buffer);
-    int ret = write(fd, buffer.data(), buffer.size());
-    if (ret != static_cast<int>(buffer.size())) {
+    socket.write_some(asio::buffer(buffer), ec);
+    if (ec) {
         std::cout << "Write header error\n";
-        close(fd);
+        std::cout << ec.message() << "\n";
         return {PTC_ErrCode::TRANSFER_FAILED, {}};
     }
 
     if (!cmd.payload.empty()) {
-        print_mem(cmd.payload);
-        ret = write(fd, cmd.payload.data(), cmd.payload.size());
-        if (ret != static_cast<int>(cmd.payload.size())) {
+        socket.write_some(asio::buffer(cmd.payload), ec);
+        if (ec) {
             std::cout << "Write Payload error\n";
-            close(fd);
+            std::cout << ec.message() << "\n";
             return {PTC_ErrCode::TRANSFER_FAILED, {}};
         }
     }
 
     // Receive Feedback
-    auto ret2 = readCommand(fd);
-    close(fd);
+    auto ret2 = readCommand(socket);
     return ret2;
 }
 
