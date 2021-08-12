@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 struct PointXYZIT {
     float x;
     float y;

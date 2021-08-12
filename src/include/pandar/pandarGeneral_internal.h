@@ -16,20 +16,16 @@
 
 #pragma once
 
-#include "input.h"
 #include "pandarGeneral_sdk/point_types.h"
 
+#include <asio.hpp>
+
 #include <functional>
-#include <list>
 #include <string>
 #include <thread>
 #include <vector>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-inline constexpr double degToRad(double degree) { return degree * M_PI / 180; }
+using asio::ip::udp;
 
 inline double parseUTC(const uint8_t *buf) {
     std::tm tTm;
@@ -101,25 +97,36 @@ class PandarGeneral_Internal {
     void Stop();
 
   private:
-    void RecvTask();
-    void ProcessGps(const PandarGPS &gpsMsg);
-    void ProcessLidarPacket(const PandarPacket &packet);
+    void processGps(const std::vector<uint8_t> &packet);
+    void processLidarPacket(const std::vector<uint8_t> &packet);
 
-    int ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size);
+    std::optional<PandarGPS> parseGPS(const std::vector<uint8_t> &recvbuf);
 
-    std::unique_ptr<std::thread> lidar_recv_thr_;
-    bool enable_lidar_recv_thr_ = false;
     int start_angle_;
 
-    std::list<PandarPacket> lidar_packets_;
-
-    std::unique_ptr<Input> input_;
     std::function<void(std::vector<PointXYZIT> cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
 
     std::string frame_id_;
 
     static constexpr float disUnit_ = 0.004; // 4mm
+
+  private: // asio
+    asio::io_context io_context_;
+    udp::socket lidarRcvSocket_;
+    udp::socket gpsRcvSocket_;
+
+    std::unique_ptr<std::thread> contextThr_;
+    bool enableRecvThr_ = false;
+
+    std::vector<uint8_t> lidarRcvBuffer_;
+    std::vector<uint8_t> gpsRcvBuffer_;
+
+    udp::endpoint lidarRemoteEndpoint_;
+    udp::endpoint gpsRemoteEndpoint_;
+
+    void rcvLidarHandler();
+    void rcvGpsHandler();
 
   protected:
     std::vector<float> elev_angle_map_;
@@ -133,7 +140,7 @@ class PandarGeneral_Internal {
     std::string m_sLidarType;
 
     virtual std::optional<HS_LIDAR_Packet>
-    parseLidarPacket(const uint8_t *recvbuf, const int len) = 0;
+    parseLidarPacket(const std::vector<uint8_t> &packet) = 0;
 
     void CalcPointXYZIT(const HS_LIDAR_Packet &pkt, int blockid, double pktRcvTimestamp);
 

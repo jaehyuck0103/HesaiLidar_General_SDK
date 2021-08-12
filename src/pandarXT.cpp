@@ -47,9 +47,10 @@ void PandarXT::Init() {
         3.28f - 50.0f * 0.0f};
 }
 
-std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const uint8_t *recvbuf, const int len) {
-    if (len != HS_LIDAR_XT_PACKET_SIZE && len != HS_LIDAR_XT16_PACKET_SIZE) {
-        std::cout << "Packet Size Mismatch (PandarXT): " << len << "\n";
+std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
+
+    if (recvbuf.size() != HS_LIDAR_XT_PACKET_SIZE && recvbuf.size() != HS_LIDAR_XT16_PACKET_SIZE) {
+        std::cout << "Packet Size Mismatch (PandarXT): " << recvbuf.size() << "\n";
         return std::nullopt;
     }
 

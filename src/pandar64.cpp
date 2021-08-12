@@ -108,9 +108,11 @@ void Pandar64::Init() {
     num_lasers_ = 64;
 }
 
-std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const uint8_t *recvbuf, const int len) {
-    if (len != HS_LIDAR_L64_PACKET_SIZE && len != HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE) {
-        std::cout << "Packet Size Mismatch (Pandar64): " << len << "\n";
+std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
+
+    if (recvbuf.size() != HS_LIDAR_L64_PACKET_SIZE &&
+        recvbuf.size() != HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE) {
+        std::cout << "Packet Size Mismatch (Pandar64): " << recvbuf.size() << "\n";
         return std::nullopt;
     }
 

@@ -17,9 +17,10 @@
 #include "pandar/pandarGeneral_internal.h"
 
 #include <cmath>
-#include <cstring>
 #include <iostream>
 #include <sstream>
+
+double degToRad(double degree) { return degree * M_PI / 180; }
 
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
@@ -29,9 +30,9 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t start_angle,
     std::string lidar_type,
     std::string frame_id,
-    std::string timestampType) {
-
-    input_ = std::make_unique<Input>(lidar_port, gps_port);
+    std::string timestampType)
+    : lidarRcvSocket_(io_context_, udp::endpoint(udp::v4(), lidar_port)),
+      gpsRcvSocket_(io_context_, udp::endpoint(udp::v4(), gps_port)) {
 
     pcl_callback_ = pcl_callback;
     gps_callback_ = gps_callback;
@@ -43,8 +44,72 @@ PandarGeneral_Internal::PandarGeneral_Internal(
 
 PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
 
-bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_content) {
+void PandarGeneral_Internal::Start() {
+    Stop();
 
+    enableRecvThr_ = true;
+    if (pcl_callback_) {
+        rcvLidarHandler();
+    };
+    if (gps_callback_) {
+        rcvGpsHandler();
+    }
+    contextThr_ = std::make_unique<std::thread>([this]() { io_context_.run(); });
+}
+
+void PandarGeneral_Internal::Stop() {
+    enableRecvThr_ = false;
+
+    if (contextThr_ && contextThr_->joinable()) {
+        contextThr_->join();
+    }
+}
+
+void PandarGeneral_Internal::rcvLidarHandler() {
+
+    if (!enableRecvThr_) {
+        return;
+    }
+
+    lidarRcvBuffer_.resize(1500);
+    lidarRcvSocket_.async_receive_from(
+        asio::buffer(lidarRcvBuffer_),
+        lidarRemoteEndpoint_,
+        [this](const asio::error_code &ec, std::size_t bytes) {
+            if (ec) {
+                std::cout << ec.message() << std::endl;
+            } else {
+                lidarRcvBuffer_.resize(bytes);
+                processLidarPacket(lidarRcvBuffer_);
+            }
+
+            rcvLidarHandler();
+        });
+}
+
+void PandarGeneral_Internal::rcvGpsHandler() {
+
+    if (!enableRecvThr_) {
+        return;
+    }
+
+    gpsRcvBuffer_.resize(1500);
+    gpsRcvSocket_.async_receive_from(
+        asio::buffer(gpsRcvBuffer_),
+        gpsRemoteEndpoint_,
+        [this](const asio::error_code &ec, std::size_t bytes) {
+            if (ec) {
+                std::cout << ec.message() << std::endl;
+            } else {
+                gpsRcvBuffer_.resize(bytes);
+                processGps(gpsRcvBuffer_);
+            }
+
+            rcvGpsHandler();
+        });
+}
+
+bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_content) {
     std::cout << "Parse Lidar Correction...\n";
 
     std::vector<float> elev_angle;
@@ -92,47 +157,12 @@ bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_conten
     }
 }
 
-void PandarGeneral_Internal::Start() {
-    Stop();
-    enable_lidar_recv_thr_ = true;
-    lidar_recv_thr_ = std::make_unique<std::thread>(&PandarGeneral_Internal::RecvTask, this);
-}
-
-void PandarGeneral_Internal::Stop() {
-    enable_lidar_recv_thr_ = false;
-
-    if (lidar_recv_thr_) {
-        lidar_recv_thr_->join();
-    }
-
-    return;
-}
-
-void PandarGeneral_Internal::RecvTask() {
-    while (enable_lidar_recv_thr_) {
-        PandarPacket pkt;
-        int rc = input_->getPacket(&pkt);
-        if (rc == -1) {
-            continue;
-        }
-
-        if (pkt.size == GPS_PACKET_SIZE) {
-            PandarGPS gpsMsg;
-            int ret = ParseGPS(&gpsMsg, pkt.data, pkt.size);
-            if (ret == 0) {
-                ProcessGps(gpsMsg);
-            }
-        } else {
-            ProcessLidarPacket(pkt);
-        }
-    }
-}
-
-void PandarGeneral_Internal::ProcessLidarPacket(const PandarPacket &packet) {
+void PandarGeneral_Internal::processLidarPacket(const std::vector<uint8_t> &packet) {
 
     static int last_azimuth = 0;
+    std::chrono::duration<double> timestamp = std::chrono::system_clock::now().time_since_epoch();
 
-    if (auto pkt = parseLidarPacket(packet.data, packet.size)) {
+    if (auto pkt = parseLidarPacket(packet)) {
 
         for (size_t i = 0; i < pkt->blocks.size(); ++i) {
 
@@ -142,63 +172,67 @@ void PandarGeneral_Internal::ProcessLidarPacket(const PandarPacket &packet) {
                 (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
                 (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
 
-                if (pcl_callback_ && PointCloudList.size() > 0) {
+                if (PointCloudList.size() > 0) {
                     pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
                     PointCloudList.clear();
                 }
             }
 
-            CalcPointXYZIT(*pkt, i, packet.stamp);
+            CalcPointXYZIT(*pkt, i, timestamp.count());
             last_azimuth = curr_azimuth;
         }
     }
 }
 
-void PandarGeneral_Internal::ProcessGps(const PandarGPS &gpsMsg) {
-    std::tm t;
-    t.tm_year = gpsMsg.year + 100; // years since 1900
-    t.tm_mon = gpsMsg.month - 1;   // [0, 11]
-    t.tm_mday = gpsMsg.day;
-    t.tm_hour = gpsMsg.hour;
-    t.tm_min = gpsMsg.minute;
-    t.tm_sec = gpsMsg.second;
-    t.tm_isdst = 0;
+void PandarGeneral_Internal::processGps(const std::vector<uint8_t> &packet) {
 
-    if (gps_callback_) {
+    if (auto gpsMsg = parseGPS(packet)) {
+        std::tm t;
+        t.tm_year = gpsMsg->year + 100; // years since 1900
+        t.tm_mon = gpsMsg->month - 1;   // [0, 11]
+        t.tm_mday = gpsMsg->day;
+        t.tm_hour = gpsMsg->hour;
+        t.tm_min = gpsMsg->minute;
+        t.tm_sec = gpsMsg->second;
+        t.tm_isdst = 0;
+
         gps_callback_(static_cast<double>(std::mktime(&t)));
     }
 }
 
-int PandarGeneral_Internal::ParseGPS(PandarGPS *packet, const uint8_t *recvbuf, const int size) {
-    if (size != GPS_PACKET_SIZE) {
-        return -1;
-    }
-    int index = 0;
-    packet->flag = (recvbuf[index] & 0xff) | ((recvbuf[index + 1] & 0xff) << 8);
-    index += GPS_PACKET_FLAG_SIZE;
-    packet->year = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_YEAR_SIZE;
-    packet->month = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_MONTH_SIZE;
-    packet->day = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_DAY_SIZE;
-    packet->second = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_SECOND_SIZE;
-    packet->minute = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_MINUTE_SIZE;
-    packet->hour = (recvbuf[index] & 0xff - 0x30) + (recvbuf[index + 1] & 0xff - 0x30) * 10;
-    index += GPS_PACKET_HOUR_SIZE;
-    packet->fineTime = (recvbuf[index] & 0xff) | (recvbuf[index + 1] & 0xff) << 8 |
-                       ((recvbuf[index + 2] & 0xff) << 16) | ((recvbuf[index + 3] & 0xff) << 24);
+std::optional<PandarGPS> PandarGeneral_Internal::parseGPS(const std::vector<uint8_t> &recvbuf) {
 
-    return 0;
+    if (recvbuf.size() != GPS_PACKET_SIZE) {
+        return std::nullopt;
+    }
+
+    int index = 0;
+
+    PandarGPS packet;
+    packet.flag = recvbuf[index] | recvbuf[index + 1] << 8;
+    index += GPS_PACKET_FLAG_SIZE;
+    packet.year = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_YEAR_SIZE;
+    packet.month = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_MONTH_SIZE;
+    packet.day = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_DAY_SIZE;
+    packet.second = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_SECOND_SIZE;
+    packet.minute = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_MINUTE_SIZE;
+    packet.hour = (recvbuf[index] - 0x30) + (recvbuf[index + 1] - 0x30) * 10;
+    index += GPS_PACKET_HOUR_SIZE;
+    packet.fineTime = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
+                      recvbuf[index + 3] << 24;
+
+    return packet;
 }
 
 void PandarGeneral_Internal::CalcPointXYZIT(
     const HS_LIDAR_Packet &pkt,
     int blockid,
     double pktRcvTimestamp) {
-
     const HS_LIDAR_Block &block = pkt.blocks[blockid];
 
     for (int i = 0; i < num_lasers_; ++i) {

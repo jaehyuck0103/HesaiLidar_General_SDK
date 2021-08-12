@@ -85,10 +85,11 @@ void Pandar40P::Init() {
     num_lasers_ = 40;
 }
 
-std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const uint8_t *recvbuf, const int len) {
-    if (len != HS_LIDAR_L40_PACKET_SIZE &&
-        len != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
-        std::cout << "Packet Size Mismatch (Pandar40): " << len << "\n";
+std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
+
+    if (recvbuf.size() != HS_LIDAR_L40_PACKET_SIZE &&
+        recvbuf.size() != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
+        std::cout << "Packet Size Mismatch (Pandar40): " << recvbuf.size() << "\n";
         return std::nullopt;
     }
 

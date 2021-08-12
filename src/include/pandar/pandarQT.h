@@ -44,5 +44,5 @@ class PandarQT : public PandarGeneral_Internal {
     void Init();
 
     virtual std::optional<HS_LIDAR_Packet>
-    parseLidarPacket(const uint8_t *recvbuf, const int len) final;
+    parseLidarPacket(const std::vector<uint8_t> &recvbuf) final;
 };

@@ -19,7 +19,6 @@ target_link_libraries(asio INTERFACE pthread)
 add_library(
   ${PROJECT_NAME} SHARED
   src/pandarGeneral_sdk.cpp
-  src/input.cpp
   src/pandarGeneral_internal.cpp
   src/tcp_command_client.cpp
   src/pandar40P.cpp
