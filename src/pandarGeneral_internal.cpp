@@ -27,7 +27,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t gps_port,
     std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
     std::function<void(double)> gps_callback,
-    uint16_t start_angle,
+    uint16_t start_azimuth,
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType)
@@ -36,7 +36,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
 
     pcl_callback_ = pcl_callback;
     gps_callback_ = gps_callback;
-    start_angle_ = start_angle;
+    start_azimuth_ = start_azimuth;
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
     m_sTimestampType = timestampType;
@@ -159,18 +159,18 @@ bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_conten
 
 void PandarGeneral_Internal::processLidarPacket(const std::vector<uint8_t> &packet) {
 
-    static int last_azimuth = 0;
+    static uint16_t last_azimuth = 0;
     std::chrono::duration<double> timestamp = std::chrono::system_clock::now().time_since_epoch();
 
     if (auto pkt = parseLidarPacket(packet)) {
 
         for (size_t i = 0; i < pkt->blocks.size(); ++i) {
 
-            int curr_azimuth = static_cast<int>(pkt->blocks[i].azimuth);
+            uint16_t curr_azimuth = pkt->blocks[i].azimuth;
 
-            if ((last_azimuth < start_angle_ && start_angle_ <= curr_azimuth) ||
-                (start_angle_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
-                (curr_azimuth < last_azimuth && last_azimuth < start_angle_)) {
+            if ((last_azimuth < start_azimuth_ && start_azimuth_ <= curr_azimuth) ||
+                (start_azimuth_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
+                (curr_azimuth < last_azimuth && last_azimuth < start_azimuth_)) {
 
                 if (PointCloudList.size() > 0) {
                     pcl_callback_(PointCloudList, PointCloudList[0].timestamp);

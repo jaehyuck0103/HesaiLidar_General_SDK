@@ -84,7 +84,7 @@ class PandarGeneral_Internal {
         uint16_t gps_port,
         std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
         std::function<void(double)> gps_callback,
-        uint16_t start_angle,
+        uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType);
@@ -102,7 +102,7 @@ class PandarGeneral_Internal {
 
     std::optional<PandarGPS> parseGPS(const std::vector<uint8_t> &recvbuf);
 
-    int start_angle_;
+    uint16_t start_azimuth_;
 
     std::function<void(const std::vector<PointXYZIT> &cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;

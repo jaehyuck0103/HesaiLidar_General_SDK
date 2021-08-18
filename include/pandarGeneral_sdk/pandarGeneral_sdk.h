@@ -44,7 +44,7 @@ class PandarGeneralSDK {
         const uint16_t gps_port,
         std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
         std::function<void(double)> gps_callback,
-        uint16_t start_angle,
+        uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType); // the default timestamp type is LiDAR time
