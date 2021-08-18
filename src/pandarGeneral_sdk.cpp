@@ -37,7 +37,8 @@ PandarGeneralSDK::PandarGeneralSDK(
     uint16_t start_azimuth,
     std::string lidar_type,
     std::string frame_id,
-    std::string timestampType) {
+    std::string timestampType,
+    int fps) {
 
     if (lidar_type == "Pandar40P") {
         internal_ = std::make_unique<Pandar40P>(
@@ -48,7 +49,8 @@ PandarGeneralSDK::PandarGeneralSDK(
             start_azimuth,
             lidar_type,
             frame_id,
-            timestampType);
+            timestampType,
+            fps);
     } else if (lidar_type == "Pandar64") {
         internal_ = std::make_unique<Pandar64>(
             lidar_port,
@@ -58,7 +60,8 @@ PandarGeneralSDK::PandarGeneralSDK(
             start_azimuth,
             lidar_type,
             frame_id,
-            timestampType);
+            timestampType,
+            fps);
     } else if (lidar_type == "PandarQT") {
         internal_ = std::make_unique<PandarQT>(
             lidar_port,
@@ -68,7 +71,8 @@ PandarGeneralSDK::PandarGeneralSDK(
             start_azimuth,
             lidar_type,
             frame_id,
-            timestampType);
+            timestampType,
+            fps);
     } else if (lidar_type == "PandarXT-32" || lidar_type == "PandarXT-16") {
         internal_ = std::make_unique<PandarXT>(
             lidar_port,
@@ -78,7 +82,8 @@ PandarGeneralSDK::PandarGeneralSDK(
             start_azimuth,
             lidar_type,
             frame_id,
-            timestampType);
+            timestampType,
+            fps);
     } else {
         std::terminate();
     }

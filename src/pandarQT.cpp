@@ -42,6 +42,13 @@ void PandarQT::Init() {
                            -6.113f, -6.269f, -6.447f, -6.651f, -6.887f, -7.163f, -7.493f, -7.892f};
 
     num_lasers_ = 64;
+
+    if (fps_ == 10) {
+        azimuth_res_ = 60;
+    } else {
+        std::cout << "Unavailable FPS: " << fps_ << std::endl;
+        std::terminate();
+    }
 }
 
 std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {

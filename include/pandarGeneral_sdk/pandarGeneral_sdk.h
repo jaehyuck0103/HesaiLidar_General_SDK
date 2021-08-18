@@ -47,7 +47,8 @@ class PandarGeneralSDK {
         uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
-        std::string timestampType); // the default timestamp type is LiDAR time
+        std::string timestampType, // the default timestamp type is LiDAR time
+        int fps);
 
     ~PandarGeneralSDK();
 

@@ -30,7 +30,8 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t start_azimuth,
     std::string lidar_type,
     std::string frame_id,
-    std::string timestampType)
+    std::string timestampType,
+    int fps)
     : lidarRcvSocket_(io_context_, udp::endpoint(udp::v4(), lidar_port)),
       gpsRcvSocket_(io_context_, udp::endpoint(udp::v4(), gps_port)) {
 
@@ -40,6 +41,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     m_sLidarType = lidar_type;
     frame_id_ = frame_id;
     m_sTimestampType = timestampType;
+    fps_ = fps;
 }
 
 PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
@@ -167,6 +169,11 @@ void PandarGeneral_Internal::processLidarPacket(const std::vector<uint8_t> &pack
         for (size_t i = 0; i < pkt->blocks.size(); ++i) {
 
             uint16_t curr_azimuth = pkt->blocks[i].azimuth;
+
+            if (!isValidAzimuth(curr_azimuth)) {
+                std::cout << "Unvalid Azimuth: " << curr_azimuth << "\n";
+                break;
+            }
 
             if ((last_azimuth < start_azimuth_ && start_azimuth_ <= curr_azimuth) ||
                 (start_azimuth_ <= curr_azimuth && curr_azimuth < last_azimuth) ||

@@ -52,6 +52,17 @@ void PandarXT::Init() {
     } else {
         num_lasers_ = 32;
     }
+
+    if (fps_ == 5) {
+        azimuth_res_ = 9;
+    } else if (fps_ == 10) {
+        azimuth_res_ = 18;
+    } else if (fps_ == 20) {
+        azimuth_res_ = 36;
+    } else {
+        std::cout << "Unavailable FPS: " << fps_ << std::endl;
+        std::terminate();
+    }
 }
 
 std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {

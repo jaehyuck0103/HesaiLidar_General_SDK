@@ -87,7 +87,8 @@ class PandarGeneral_Internal {
         uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
-        std::string timestampType);
+        std::string timestampType,
+        int fps);
 
     virtual ~PandarGeneral_Internal();
 
@@ -101,8 +102,6 @@ class PandarGeneral_Internal {
     void processLidarPacket(const std::vector<uint8_t> &packet);
 
     std::optional<PandarGPS> parseGPS(const std::vector<uint8_t> &recvbuf);
-
-    uint16_t start_azimuth_;
 
     std::function<void(const std::vector<PointXYZIT> &cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
@@ -138,6 +137,17 @@ class PandarGeneral_Internal {
 
     std::string m_sTimestampType;
     std::string m_sLidarType;
+
+    bool isValidAzimuth(uint16_t azimuth) {
+        if (azimuth >= 0 && azimuth < 36000 && azimuth % azimuth_res_ == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    uint16_t start_azimuth_;
+    uint16_t azimuth_res_;
+    int fps_;
 
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &packet) = 0;

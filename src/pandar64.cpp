@@ -74,6 +74,15 @@ void Pandar64::Init() {
                            -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f, -1.042f};
 
     num_lasers_ = 64;
+
+    if (fps_ == 10) {
+        azimuth_res_ = 20;
+    } else if (fps_ == 20) {
+        azimuth_res_ = 40;
+    } else {
+        std::cout << "Unavailable FPS: " << fps_ << std::endl;
+        std::terminate();
+    }
 }
 
 std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
