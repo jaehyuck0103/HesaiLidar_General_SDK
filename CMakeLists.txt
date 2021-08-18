@@ -35,7 +35,8 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 
   add_executable(runSDK test/runSDK.cpp)
   target_include_directories(runSDK PRIVATE include ${PCL_INCLUDE_DIRS})
-  target_link_libraries(runSDK PRIVATE ${PROJECT_NAME} ${PCL_LIBRARIES} pthread)
+  target_link_libraries(runSDK PRIVATE ${PROJECT_NAME} ${PCL_LIBRARIES} pthread
+                                       tbb)
 
   add_executable(sendPcap test/sendPcapPacket.cpp test/pcap_reader.cpp)
   target_link_libraries(sendPcap PRIVATE pcap asio)

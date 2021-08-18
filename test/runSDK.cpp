@@ -17,26 +17,25 @@
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
 
 #include <pcl/visualization/cloud_viewer.h>
+#include <tbb/concurrent_queue.h>
 #include <thread>
-
-using namespace std::chrono_literals;
 
 pcl::visualization::CloudViewer viewer("Simple");
 
+tbb::concurrent_bounded_queue<std::vector<PointXYZIT>> con_queue;
+
 void gpsCallback(int timestamp) { printf("gps: %d\n", timestamp); }
 
-void lidarCallback(std::vector<PointXYZIT> cld, double timestamp) {
+void lidarCallback(const std::vector<PointXYZIT> &cld, double timestamp) {
     printf("timestamp: %lf,point_size: %ld\n", timestamp, cld.size());
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-    for (const auto &pt : cld) {
-        cloud->emplace_back(pt.x, pt.y, pt.z);
-    }
-
-    viewer.showCloud(cloud);
+    con_queue.try_push(cld);
 }
 
 int main() {
+
+    con_queue.set_capacity(2);
+
     PandarGeneralSDK pandarGeneral(
         "", // "192.168.1.201",
         2368,
@@ -44,11 +43,21 @@ int main() {
         lidarCallback,
         gpsCallback,
         0,
-        std::string("Pandar64"),
-        std::string("frame_id"),
+        "Pandar64",
+        "frame_id",
         "");
     pandarGeneral.Start();
-    std::this_thread::sleep_for(100s);
+
+    std::vector<PointXYZIT> cld;
+    while (true) {
+        con_queue.pop(cld);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud =
+            pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+        for (const auto &pt : cld) {
+            cloud->emplace_back(pt.x, pt.y, pt.z);
+        }
+        viewer.showCloud(cloud);
+    }
 
     return 0;
 }

@@ -82,7 +82,7 @@ class PandarGeneral_Internal {
     PandarGeneral_Internal(
         uint16_t lidar_port,
         uint16_t gps_port,
-        std::function<void(std::vector<PointXYZIT>, double)> pcl_callback,
+        std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_angle,
         std::string lidar_type,
@@ -104,7 +104,7 @@ class PandarGeneral_Internal {
 
     int start_angle_;
 
-    std::function<void(std::vector<PointXYZIT> cld, double timestamp)> pcl_callback_;
+    std::function<void(const std::vector<PointXYZIT> &cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
 
     std::string frame_id_;
