@@ -15,12 +15,12 @@ int main() {
 
     /*
     pcapTest(
-        "Pandar40P",
         "../test/test_data/Freeway_Pandar40P.pcap",
         "../test/test_data/correction file_Pandar40P.csv");
+    */
 
+    /*
     pcapTest(
-        "PandarQT",
         "../test/test_data/PandarQT_Crossroad.pcap",
         "../test/test_data/PandarQT Correction file.csv");
     */

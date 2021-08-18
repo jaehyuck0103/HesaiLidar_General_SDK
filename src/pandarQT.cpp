@@ -4,86 +4,23 @@
 
 void PandarQT::Init() {
 
-    blockOffsetSingle_.resize(HS_LIDAR_QT_BLOCK_NUMBER);
-    blockOffsetSingle_[0] = 25.71f;
-    blockOffsetSingle_[1] = 25.71f + 166.67f;
-    blockOffsetSingle_[2] = 25.71f + 333.33f;
-    blockOffsetSingle_[3] = 25.71f + 500.00f;
+    blockOffsetSingle_ = {25.71f, 25.71f + 166.67f, 25.71f + 333.33f, 25.71f + 500.00f};
+    blockOffsetDual_ = {25.71f, 25.71f, 25.71f + 166.67f, 25.71f + 166.67f};
 
-    blockOffsetDual_.resize(HS_LIDAR_QT_BLOCK_NUMBER);
-    blockOffsetDual_[0] = 25.71f;
-    blockOffsetDual_[1] = 25.71f;
-    blockOffsetDual_[2] = 25.71f + 166.67f;
-    blockOffsetDual_[3] = 25.71f + 166.67f;
-
-    laserOffset_.resize(HS_LIDAR_QT_UNIT_NUM);
-    laserOffset_[0] = 10.0f + 2.31f;
-    laserOffset_[1] = 10.0f + 4.37f;
-    laserOffset_[2] = 10.0f + 6.43f;
-    laserOffset_[3] = 10.0f + 8.49f;
-    laserOffset_[4] = 10.0f + 10.54f;
-    laserOffset_[5] = 10.0f + 12.60f;
-    laserOffset_[6] = 10.0f + 14.66f;
-    laserOffset_[7] = 10.0f + 16.71f;
-    laserOffset_[8] = 10.0f + 19.16f;
-    laserOffset_[9] = 10.0f + 21.22f;
-    laserOffset_[10] = 10.0f + 23.28f;
-    laserOffset_[11] = 10.0f + 25.34f;
-    laserOffset_[12] = 10.0f + 27.39f;
-    laserOffset_[13] = 10.0f + 29.45f;
-    laserOffset_[14] = 10.0f + 31.50f;
-    laserOffset_[15] = 10.0f + 33.56f;
-
-    laserOffset_[16] = 10.0f + 36.61f;
-    laserOffset_[17] = 10.0f + 38.67f;
-    laserOffset_[18] = 10.0f + 40.73f;
-    laserOffset_[19] = 10.0f + 42.78f;
-    laserOffset_[20] = 10.0f + 44.84f;
-    laserOffset_[21] = 10.0f + 46.90f;
-    laserOffset_[22] = 10.0f + 48.95f;
-    laserOffset_[23] = 10.0f + 51.01f;
-    laserOffset_[24] = 10.0f + 53.45f;
-    laserOffset_[25] = 10.0f + 55.52f;
-    laserOffset_[26] = 10.0f + 57.58f;
-    laserOffset_[27] = 10.0f + 59.63f;
-    laserOffset_[28] = 10.0f + 61.69f;
-    laserOffset_[29] = 10.0f + 63.74f;
-    laserOffset_[30] = 10.0f + 65.80f;
-    laserOffset_[31] = 10.0f + 67.86f;
-
-    laserOffset_[32] = 10.0f + 70.90f;
-    laserOffset_[33] = 10.0f + 72.97f;
-    laserOffset_[34] = 10.0f + 75.02f;
-    laserOffset_[35] = 10.0f + 77.08f;
-    laserOffset_[36] = 10.0f + 79.14f;
-    laserOffset_[37] = 10.0f + 81.19f;
-    laserOffset_[38] = 10.0f + 83.25f;
-    laserOffset_[39] = 10.0f + 85.30f;
-    laserOffset_[40] = 10.0f + 87.75f;
-    laserOffset_[41] = 10.0f + 89.82f;
-    laserOffset_[42] = 10.0f + 91.87f;
-    laserOffset_[43] = 10.0f + 93.93f;
-    laserOffset_[44] = 10.0f + 95.98f;
-    laserOffset_[45] = 10.0f + 98.04f;
-    laserOffset_[46] = 10.0f + 100.10f;
-    laserOffset_[47] = 10.0f + 102.15f;
-
-    laserOffset_[48] = 10.0f + 105.20f;
-    laserOffset_[49] = 10.0f + 107.26f;
-    laserOffset_[50] = 10.0f + 109.32f;
-    laserOffset_[51] = 10.0f + 111.38f;
-    laserOffset_[52] = 10.0f + 113.43f;
-    laserOffset_[53] = 10.0f + 115.49f;
-    laserOffset_[54] = 10.0f + 117.54f;
-    laserOffset_[55] = 10.0f + 119.60f;
-    laserOffset_[56] = 10.0f + 122.05f;
-    laserOffset_[57] = 10.0f + 124.11f;
-    laserOffset_[58] = 10.0f + 126.17f;
-    laserOffset_[59] = 10.0f + 128.22f;
-    laserOffset_[60] = 10.0f + 130.28f;
-    laserOffset_[61] = 10.0f + 132.34f;
-    laserOffset_[62] = 10.0f + 134.39f;
-    laserOffset_[63] = 10.0f + 136.45f;
+    laserOffset_ = {
+        10.0f + 2.31f,   10.0f + 4.37f,   10.0f + 6.43f,   10.0f + 8.49f,   10.0f + 10.54f,
+        10.0f + 12.60f,  10.0f + 14.66f,  10.0f + 16.71f,  10.0f + 19.16f,  10.0f + 21.22f,
+        10.0f + 23.28f,  10.0f + 25.34f,  10.0f + 27.39f,  10.0f + 29.45f,  10.0f + 31.50f,
+        10.0f + 33.56f,  10.0f + 36.61f,  10.0f + 38.67f,  10.0f + 40.73f,  10.0f + 42.78f,
+        10.0f + 44.84f,  10.0f + 46.90f,  10.0f + 48.95f,  10.0f + 51.01f,  10.0f + 53.45f,
+        10.0f + 55.52f,  10.0f + 57.58f,  10.0f + 59.63f,  10.0f + 61.69f,  10.0f + 63.74f,
+        10.0f + 65.80f,  10.0f + 67.86f,  10.0f + 70.90f,  10.0f + 72.97f,  10.0f + 75.02f,
+        10.0f + 77.08f,  10.0f + 79.14f,  10.0f + 81.19f,  10.0f + 83.25f,  10.0f + 85.30f,
+        10.0f + 87.75f,  10.0f + 89.82f,  10.0f + 91.87f,  10.0f + 93.93f,  10.0f + 95.98f,
+        10.0f + 98.04f,  10.0f + 100.10f, 10.0f + 102.15f, 10.0f + 105.20f, 10.0f + 107.26f,
+        10.0f + 109.32f, 10.0f + 111.38f, 10.0f + 113.43f, 10.0f + 115.49f, 10.0f + 117.54f,
+        10.0f + 119.60f, 10.0f + 122.05f, 10.0f + 124.11f, 10.0f + 126.17f, 10.0f + 128.22f,
+        10.0f + 130.28f, 10.0f + 132.34f, 10.0f + 134.39f, 10.0f + 136.45f};
 
     elev_angle_map_ = {
         -52.121f, -49.785f, -47.577f, -45.477f, -43.465f, -41.528f, -39.653f, -37.831f,

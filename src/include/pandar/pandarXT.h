@@ -30,33 +30,6 @@
 #define HS_LIDAR_XT16_UNIT_NUM (16)
 #define HS_LIDAR_XT16_PACKET_SIZE (568)
 
-const float pandarXT_elev_angle_map[] = {
-    15.0f, 14.0f, 13.0f, 12.0f,  11.0f,  10.0f,  9.0f,   8.0f,   7.0f,   6.0f,  5.0f,
-    4.0f,  3.0f,  2.0f,  1.0f,   0.0f,   -1.0f,  -2.0f,  -3.0f,  -4.0f,  -5.0f, -6.0f,
-    -7.0f, -8.0f, -9.0f, -10.0f, -11.0f, -12.0f, -13.0f, -14.0f, -15.0f, -16.0f};
-
-const float pandarXT_horizatal_azimuth_offset_map[] = {
-    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-const float laserXTOffset[HS_LIDAR_XT_UNIT_NUM] = {
-    1.512f * 0.0f + 0.28f,  1.512f * 1.0f + 0.28f,  1.512f * 2.0f + 0.28f,
-    1.512f * 3.0f + 0.28f,  1.512f * 4.0f + 0.28f,  1.512f * 5.0f + 0.28f,
-    1.512f * 6.0f + 0.28f,  1.512f * 7.0f + 0.28f,
-
-    1.512f * 8.0f + 0.28f,  1.512f * 9.0f + 0.28f,  1.512f * 10.0f + 0.28f,
-    1.512f * 11.0f + 0.28f, 1.512f * 12.0f + 0.28f, 1.512f * 13.0f + 0.28f,
-    1.512f * 14.0f + 0.28f, 1.512f * 15.0f + 0.28f,
-
-    1.512f * 16.0f + 0.28f, 1.512f * 17.0f + 0.28f, 1.512f * 18.0f + 0.28f,
-    1.512f * 19.0f + 0.28f, 1.512f * 20.0f + 0.28f, 1.512f * 21.0f + 0.28f,
-    1.512f * 22.0f + 0.28f, 1.512f * 23.0f + 0.28f,
-
-    1.512f * 24.0f + 0.28f, 1.512f * 25.0f + 0.28f, 1.512f * 26.0f + 0.28f,
-    1.512f * 27.0f + 0.28f, 1.512f * 28.0f + 0.28f, 1.512f * 29.0f + 0.28f,
-    1.512f * 30.0f + 0.28f, 1.512f * 31.0f + 0.28f};
-
 class PandarXT : public PandarGeneral_Internal {
   public:
     template <typename... Args>

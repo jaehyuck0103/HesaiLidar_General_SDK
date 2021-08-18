@@ -4,26 +4,27 @@
 
 void PandarXT::Init() {
 
-    if (m_sLidarType == "PandarXT-32") {
-        elev_angle_map_.resize(32);
-        azimuth_offset_map_.resize(32);
-        laserOffset_.resize(32);
-        for (int i = 0; i < HS_LIDAR_XT_UNIT_NUM; i++) {
-            elev_angle_map_[i] = pandarXT_elev_angle_map[i];
-            azimuth_offset_map_[i] = pandarXT_horizatal_azimuth_offset_map[i];
-            laserOffset_[i] = laserXTOffset[i];
-        }
+    elev_angle_map_.clear();
+    for (int i = 0; i < HS_LIDAR_XT_UNIT_NUM; ++i) {
+        elev_angle_map_.push_back(15.0f - i);
+    }
+
+    azimuth_offset_map_ = std::vector<float>(HS_LIDAR_XT_UNIT_NUM, 0.0f);
+
+    laserOffset_.clear();
+    for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; ++i) {
+        laserOffset_.push_back(1.512f * i + 0.28f);
     }
 
     if (m_sLidarType == "PandarXT-16") {
+        for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
+            elev_angle_map_[i] = elev_angle_map_[i * 2];
+            azimuth_offset_map_[i] = azimuth_offset_map_[i * 2];
+            laserOffset_[i] = laserOffset_[i * 2];
+        }
         elev_angle_map_.resize(16);
         azimuth_offset_map_.resize(16);
         laserOffset_.resize(16);
-        for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
-            elev_angle_map_[i] = pandarXT_elev_angle_map[i * 2];
-            azimuth_offset_map_[i] = pandarXT_horizatal_azimuth_offset_map[i * 2];
-            laserOffset_[i] = laserXTOffset[i * 2];
-        }
     }
 
     blockOffsetSingle_ = {
@@ -45,6 +46,12 @@ void PandarXT::Init() {
         3.28f - 50.0f * 1.0f,
         3.28f - 50.0f * 0.0f,
         3.28f - 50.0f * 0.0f};
+
+    if (m_sLidarType == "PandarXT-16") {
+        num_lasers_ = 16;
+    } else {
+        num_lasers_ = 32;
+    }
 }
 
 std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
@@ -71,7 +78,7 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
         std::cout << "Error protocalVerMajor!\n";
         return std::nullopt;
     }
-    if (nLasers != 0x20 && nLasers != 0x10) {
+    if (static_cast<int>(nLasers) != num_lasers_) {
         std::cout << "Error nLasers!\n";
         return std::nullopt;
     }
@@ -83,8 +90,6 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
         std::cout << "Error disUnit!\n";
         return std::nullopt;
     }
-
-    num_lasers_ = static_cast<int>(nLasers);
 
     HS_LIDAR_Packet packet;
     packet.blocks.resize(nBlocks);

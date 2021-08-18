@@ -4,71 +4,35 @@
 
 void Pandar40P::Init() {
 
-    blockOffsetSingle_.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
-    blockOffsetSingle_[9] = -(55.56f * 0.0f + 28.58f);
-    blockOffsetSingle_[8] = -(55.56f * 1.0f + 28.58f);
-    blockOffsetSingle_[7] = -(55.56f * 2.0f + 28.58f);
-    blockOffsetSingle_[6] = -(55.56f * 3.0f + 28.58f);
-    blockOffsetSingle_[5] = -(55.56f * 4.0f + 28.58f);
-    blockOffsetSingle_[4] = -(55.56f * 5.0f + 28.58f);
-    blockOffsetSingle_[3] = -(55.56f * 6.0f + 28.58f);
-    blockOffsetSingle_[2] = -(55.56f * 7.0f + 28.58f);
-    blockOffsetSingle_[1] = -(55.56f * 8.0f + 28.58f);
-    blockOffsetSingle_[0] = -(55.56f * 9.0f + 28.58f);
+    blockOffsetSingle_ = {
+        -(55.56f * 9.0f + 28.58f),
+        -(55.56f * 8.0f + 28.58f),
+        -(55.56f * 7.0f + 28.58f),
+        -(55.56f * 6.0f + 28.58f),
+        -(55.56f * 5.0f + 28.58f),
+        -(55.56f * 4.0f + 28.58f),
+        -(55.56f * 3.0f + 28.58f),
+        -(55.56f * 2.0f + 28.58f),
+        -(55.56f * 1.0f + 28.58f),
+        -(55.56f * 0.0f + 28.58f)};
 
-    blockOffsetDual_.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
-    blockOffsetDual_[9] = -(55.56f * 0.0f + 28.58f);
-    blockOffsetDual_[8] = -(55.56f * 0.0f + 28.58f);
-    blockOffsetDual_[7] = -(55.56f * 1.0f + 28.58f);
-    blockOffsetDual_[6] = -(55.56f * 1.0f + 28.58f);
-    blockOffsetDual_[5] = -(55.56f * 2.0f + 28.58f);
-    blockOffsetDual_[4] = -(55.56f * 2.0f + 28.58f);
-    blockOffsetDual_[3] = -(55.56f * 3.0f + 28.58f);
-    blockOffsetDual_[2] = -(55.56f * 3.0f + 28.58f);
-    blockOffsetDual_[1] = -(55.56f * 4.0f + 28.58f);
-    blockOffsetDual_[0] = -(55.56f * 4.0f + 28.58f);
+    blockOffsetDual_ = {
+        -(55.56f * 4.0f + 28.58f),
+        -(55.56f * 4.0f + 28.58f),
+        -(55.56f * 3.0f + 28.58f),
+        -(55.56f * 3.0f + 28.58f),
+        -(55.56f * 2.0f + 28.58f),
+        -(55.56f * 2.0f + 28.58f),
+        -(55.56f * 1.0f + 28.58f),
+        -(55.56f * 1.0f + 28.58f),
+        -(55.56f * 0.0f + 28.58f),
+        -(55.56f * 0.0f + 28.58f)};
 
-    laserOffset_.resize(HS_LIDAR_L40_LASER_COUNT);
-    laserOffset_[3] = -3.62f;
-    laserOffset_[39] = -3.62f;
-    laserOffset_[35] = -4.92f;
-    laserOffset_[27] = -6.23f;
-    laserOffset_[11] = -8.19f;
-    laserOffset_[15] = -8.19f;
-    laserOffset_[31] = -9.5f;
-    laserOffset_[23] = -11.47f;
-    laserOffset_[28] = -12.77f;
-    laserOffset_[16] = -14.74f;
-    laserOffset_[2] = -16.04f;
-    laserOffset_[38] = -16.04f;
-    laserOffset_[34] = -17.35f;
-    laserOffset_[24] = -18.65f;
-    laserOffset_[8] = -20.62f;
-    laserOffset_[12] = -20.62f;
-    laserOffset_[30] = -21.92f;
-    laserOffset_[20] = -23.89f;
-    laserOffset_[25] = -25.19f;
-    laserOffset_[13] = -27.16f;
-    laserOffset_[1] = -28.47f;
-    laserOffset_[37] = -28.47f;
-    laserOffset_[33] = -29.77f;
-    laserOffset_[5] = -31.74f;
-    laserOffset_[21] = -31.7447f;
-    laserOffset_[9] = -33.71f;
-    laserOffset_[29] = -35.01f;
-    laserOffset_[17] = -36.98f;
-    laserOffset_[22] = -38.95f;
-    laserOffset_[10] = -40.91f;
-    laserOffset_[0] = -42.22f;
-    laserOffset_[36] = -42.22f;
-    laserOffset_[32] = -43.52f;
-    laserOffset_[4] = -45.49f;
-    laserOffset_[18] = -45.49f;
-    laserOffset_[6] = -47.46f;
-    laserOffset_[26] = -48.76f;
-    laserOffset_[14] = -50.73f;
-    laserOffset_[19] = -52.7f;
-    laserOffset_[7] = -54.67f;
+    laserOffset_ = {-42.22f, -28.47f, -16.04f, -3.62f, -45.49f, -31.74f,   -47.46f, -54.67f,
+                    -20.62f, -33.71f, -40.91f, -8.19f, -20.62f, -27.16f,   -50.73f, -8.19f,
+                    -14.74f, -36.98f, -45.49f, -52.7f, -23.89f, -31.7447f, -38.95f, -11.47f,
+                    -18.65f, -25.19f, -48.76f, -6.23f, -12.77f, -35.01f,   -21.92f, -9.5f,
+                    -43.52f, -29.77f, -17.35f, -4.92f, -42.22f, -28.47f,   -16.04f, -3.62f};
 
     elev_angle_map_ = {15.0f,  11.0f,  8.0f,   5.0f,   3.0f,   2.0f,   1.67f,  1.33f,
                        1.0f,   0.67f,  0.33f,  0.0f,   -0.33f, -0.67f, -1.0f,  -1.33f,
