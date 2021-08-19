@@ -85,8 +85,6 @@ class PandarGeneral_Internal {
 
     virtual ~PandarGeneral_Internal();
 
-    bool updateAngleCorrection(std::string correction_content);
-
     void Start();
     void Stop();
 
@@ -123,9 +121,6 @@ class PandarGeneral_Internal {
     void rcvGpsHandler();
 
   protected:
-    std::vector<float> elev_angle_map_;
-    std::vector<float> azimuth_offset_map_;
-
     std::vector<float> blockOffsetSingle_;
     std::vector<float> blockOffsetDual_;
     std::vector<float> laserOffset_;

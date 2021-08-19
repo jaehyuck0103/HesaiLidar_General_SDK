@@ -23,6 +23,7 @@ add_library(
   src/pandarGeneral_sdk.cpp
   src/pandarGeneral_internal.cpp
   src/tcp_command_client.cpp
+  src/pandar_utils.cpp
   src/pandar40P.cpp
   src/pandar64.cpp
   src/pandarQT.cpp

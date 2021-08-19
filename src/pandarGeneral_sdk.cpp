@@ -22,9 +22,7 @@
 #include "pandar/tcp_command_client.h"
 
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 
 constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
 
@@ -92,35 +90,9 @@ PandarGeneralSDK::PandarGeneralSDK(
     } else {
         std::terminate();
     }
-
-    // Try to get Angle Correction.
-    if (!device_ip.empty()) {
-        if (auto correction_content = getAngleCorrectionFromDevice(device_ip)) {
-
-            if (internal_->updateAngleCorrection(*correction_content)) {
-                std::cout << "Parse Lidar Correction Success\n";
-                return;
-            } else {
-                std::cout << "Fail to parse lidar correction\n";
-                std::terminate();
-            }
-        } else {
-            std::terminate();
-        }
-    }
 }
 
 PandarGeneralSDK::~PandarGeneralSDK() { Stop(); }
-
-bool PandarGeneralSDK::updateAngleCorrectionByFile(std::string filePath) {
-
-    std::ifstream fin(filePath);
-    std::ostringstream strStream;
-    strStream << fin.rdbuf();
-    fin.close();
-
-    return internal_->updateAngleCorrection(strStream.str());
-}
 
 void PandarGeneralSDK::Start() {
     Stop();
@@ -128,25 +100,3 @@ void PandarGeneralSDK::Start() {
 }
 
 void PandarGeneralSDK::Stop() { internal_->Stop(); }
-
-std::optional<std::string>
-PandarGeneralSDK::getAngleCorrectionFromDevice(const std::string &device_ip) {
-
-    // Dual Check
-    auto [ec, feedback] = TcpCommand::getLidarCalibration(device_ip, PANDAR_TCP_COMMAND_PORT);
-    auto [ec2, feedback2] = TcpCommand::getLidarCalibration(device_ip, PANDAR_TCP_COMMAND_PORT);
-
-    if (ec != TcpCommand::PTC_ErrCode::NO_ERROR || ec2 != TcpCommand::PTC_ErrCode::NO_ERROR) {
-        std::cout << "Fail to get correction content\n";
-        return std::nullopt;
-    }
-
-    std::string correction_content(feedback.payload.begin(), feedback.payload.end());
-    std::string correction_content2(feedback2.payload.begin(), feedback2.payload.end());
-    if (correction_content != correction_content2) {
-        std::cout << "Fail to pass the dual check\n";
-        return std::nullopt;
-    } else {
-        return correction_content;
-    }
-}

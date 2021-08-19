@@ -51,9 +51,6 @@ class PandarGeneralSDK {
 
     ~PandarGeneralSDK();
 
-    bool updateAngleCorrectionByFile(std::string correction_path);
-    std::optional<std::string> getAngleCorrectionFromDevice(const std::string &device_ip);
-
     void Start();
     void Stop();
 

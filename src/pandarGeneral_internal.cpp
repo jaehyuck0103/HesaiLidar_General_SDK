@@ -16,11 +16,7 @@
 
 #include "pandar/pandarGeneral_internal.h"
 
-#include <cmath>
 #include <iostream>
-#include <sstream>
-
-double degToRad(double degree) { return degree * M_PI / 180; }
 
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
@@ -120,54 +116,6 @@ void PandarGeneral_Internal::rcvGpsHandler() {
 
             rcvGpsHandler();
         });
-}
-
-bool PandarGeneral_Internal::updateAngleCorrection(std::string correction_content) {
-    std::cout << "Parse Lidar Correction...\n";
-
-    std::vector<float> elev_angle;
-    std::vector<float> azimuth_offset;
-
-    std::istringstream ifs(correction_content);
-    std::string line;
-    std::getline(ifs, line); // Throw away first line
-
-    for (int lineCounter = 1; std::getline(ifs, line); ++lineCounter) {
-
-        // correction file has 3 columns, min length is 5
-        if (line.length() < 5) {
-            break;
-        }
-
-        std::istringstream ss{line};
-        std::string subline;
-
-        std::getline(ss, subline, ',');
-        int lineId = stoi(subline);
-        std::getline(ss, subline, ',');
-        float elev = stof(subline);
-        std::getline(ss, subline, ',');
-        float azimuth = stof(subline);
-
-        if (lineId != lineCounter) {
-            break;
-        }
-
-        elev_angle.push_back(elev);
-        azimuth_offset.push_back(azimuth);
-    }
-
-    if (elev_angle.size() == static_cast<size_t>(num_lasers_) &&
-        azimuth_offset.size() == static_cast<size_t>(num_lasers_)) {
-
-        elev_angle_map_ = elev_angle;
-        azimuth_offset_map_ = azimuth_offset;
-        std::cout << "Parse Lidar Correction Succeed...\n";
-        return true;
-    } else {
-        std::cout << "Parse Lidar Correction Failed...\n";
-        return false;
-    }
 }
 
 void PandarGeneral_Internal::processLidarPacket(const std::vector<uint8_t> &packet) {

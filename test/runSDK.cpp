@@ -15,6 +15,7 @@
  *****************************************************************************/
 
 #include "pandarGeneral_sdk/pandarGeneral_sdk.h"
+#include "pandarGeneral_sdk/pandar_utils.h"
 
 #include <pcl/visualization/cloud_viewer.h>
 #include <tbb/concurrent_queue.h>
@@ -26,42 +27,48 @@ tbb::concurrent_bounded_queue<std::vector<uint8_t>> con_queue;
 
 double degToRad(double degree) { return degree * M_PI / 180; }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr calcPointXYZI(const std::vector<uint8_t> &frame_buffer) {
+pcl::PointCloud<pcl::PointXYZ>::Ptr calcPointXYZI(
+    const std::vector<uint8_t> &frame_buffer,
+    const bool dual_return_mode,
+    const int num_lasers,
+    const float azimuth_res_deg,
+    std::vector<float> elev_angle,
+    std::vector<float> azimuth_offset) {
 
-    int index = 0;
-    float dis_unit = 0.004;
+    const float unit_distance = 0.004;
+    const int num_returns = dual_return_mode ? 2 : 1;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
+    if (elev_angle.size() != static_cast<size_t>(num_lasers) ||
+        azimuth_offset.size() != static_cast<size_t>(num_lasers)) {
+        std::cout << "Angle correction size problem\n";
+        std::terminate();
+    }
+
     for (int azimuth_idx = 0; azimuth_idx < 1800; ++azimuth_idx) {
-        for (int dual_mode_idx = 0; dual_mode_idx < 2; ++dual_mode_idx) {
-            for (int laser_idx = 0; laser_idx < 64; ++laser_idx) {
+        for (int dual_mode_idx = 0; dual_mode_idx < num_returns; ++dual_mode_idx) {
+            for (int laser_idx = 0; laser_idx < num_lasers; ++laser_idx) {
+
+                const int index =
+                    (azimuth_idx * num_returns + dual_mode_idx) * num_lasers * 3 + laser_idx * 3;
                 uint16_t raw_distance = frame_buffer[index] | frame_buffer[index + 1] << 8;
                 uint8_t intensity = frame_buffer[index + 2];
 
-                float distance = raw_distance * dis_unit;
+                float distance = raw_distance * unit_distance;
                 if (distance < 0.1 || distance > 200.0) {
-                    index += 3;
                     continue;
                 }
 
-                /*
-                float xyDistance = distance * cosf(degToRad(elev_angle_map_[i]));
-                point.x = xyDistance *
-                          sinf(degToRad(
-                              azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
-                point.y = xyDistance *
-                          cosf(degToRad(
-                              azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
-                point.z = distance * sinf(degToRad(elev_angle_map_[i]));
-                point.intensity = unit.intensity;
-                */
+                float xyDistance = distance * cosf(degToRad(elev_angle[laser_idx]));
+                float x =
+                    xyDistance *
+                    sinf(degToRad(azimuth_offset[laser_idx] + azimuth_idx * azimuth_res_deg));
+                float y =
+                    xyDistance *
+                    cosf(degToRad(azimuth_offset[laser_idx] + azimuth_idx * azimuth_res_deg));
+                float z = distance * sinf(degToRad(elev_angle[laser_idx]));
 
-                float x = distance * sinf(degToRad(azimuth_idx * 0.2));
-                float y = distance * cosf(degToRad(azimuth_idx * 0.2));
-                float z = 0;
                 cloud->emplace_back(x, y, z);
-
-                index += 3;
             }
         }
     }
@@ -94,10 +101,21 @@ int main() {
         true);
     pandarGeneral.Start();
 
+    std::vector<float> elev_angle;
+    std::vector<float> azimuth_offset;
+    if (auto ret = PandarUtils::getFallbackAngleCorrection("Pandar64")) {
+        elev_angle = ret->first;
+        azimuth_offset = ret->second;
+    } else {
+        std::cout << "Fail to get Angle Correction" << std::endl;
+        std::terminate();
+    }
+
     std::vector<uint8_t> cld;
     while (true) {
         con_queue.pop(cld);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = calcPointXYZI(cld);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud =
+            calcPointXYZI(cld, true, 64, 0.2, elev_angle, azimuth_offset);
         viewer.showCloud(cloud);
     }
 
