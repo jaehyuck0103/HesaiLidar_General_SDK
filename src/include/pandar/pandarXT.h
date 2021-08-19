@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pandarGeneral_internal.h"
+#include "pandar_lidar_receiver.h"
 
 #include <cstdint>
 
@@ -30,10 +30,10 @@
 #define HS_LIDAR_XT16_UNIT_NUM (16)
 #define HS_LIDAR_XT16_PACKET_SIZE (568)
 
-class PandarXT : public PandarGeneral_Internal {
+class PandarXT : public PandarLidarReceiver {
   public:
     template <typename... Args>
-    PandarXT(Args &&...args) : PandarGeneral_Internal(std::forward<Args>(args)...) {
+    PandarXT(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
         Init();
     }
 

@@ -21,7 +21,8 @@ target_link_libraries(asio INTERFACE pthread)
 add_library(
   ${PROJECT_NAME} SHARED
   src/pandarGeneral_sdk.cpp
-  src/pandarGeneral_internal.cpp
+  src/pandar_gps_receiver.cpp
+  src/pandar_lidar_receiver.cpp
   src/tcp_command_client.cpp
   src/pandar_utils.cpp
   src/pandar40P.cpp

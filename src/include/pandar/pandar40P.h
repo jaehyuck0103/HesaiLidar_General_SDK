@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pandarGeneral_internal.h"
+#include "pandar_lidar_receiver.h"
 
 #include <cstdint>
 
@@ -24,11 +24,11 @@
      HS_LIDAR_L40_UTC_TIME)
 #define HS_LIDAR_L40_SEQ_NUM_SIZE (4)
 
-class Pandar40P : public PandarGeneral_Internal {
+class Pandar40P : public PandarLidarReceiver {
 
   public:
     template <typename... Args>
-    Pandar40P(Args &&...args) : PandarGeneral_Internal(std::forward<Args>(args)...) {
+    Pandar40P(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
         Init();
     }
 

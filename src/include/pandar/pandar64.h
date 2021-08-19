@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pandarGeneral_internal.h"
+#include "pandar_lidar_receiver.h"
 
 #include <cstdint>
 
@@ -40,11 +40,11 @@
     (HS_LIDAR_L64_HEAD_SIZE + HS_LIDAR_L64_PACKET_BODY_SIZE +                                     \
      HS_LIDAR_L64_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
 
-class Pandar64 : public PandarGeneral_Internal {
+class Pandar64 : public PandarLidarReceiver {
 
   public:
     template <typename... Args>
-    Pandar64(Args &&...args) : PandarGeneral_Internal(std::forward<Args>(args)...) {
+    Pandar64(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
         Init();
     }
 

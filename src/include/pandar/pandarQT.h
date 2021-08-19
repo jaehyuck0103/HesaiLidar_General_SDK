@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pandarGeneral_internal.h"
+#include "pandar_lidar_receiver.h"
 
 #include <cstdint>
 
@@ -32,11 +32,11 @@
 #define HS_LIDAR_QT_PACKET_WITHOUT_UDPSEQ_SIZE                                                    \
     (HS_LIDAR_QT_HEAD_SIZE + HS_LIDAR_QT_BODY_SIZE + HS_LIDAR_QT_PACKET_TAIL_WITHOUT_UDPSEQ_SIZE)
 
-class PandarQT : public PandarGeneral_Internal {
+class PandarQT : public PandarLidarReceiver {
 
   public:
     template <typename... Args>
-    PandarQT(Args &&...args) : PandarGeneral_Internal(std::forward<Args>(args)...) {
+    PandarQT(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
         Init();
     }
 

@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-class PandarGeneral_Internal;
+class PandarLidarReceiver;
 
 class PandarGeneralSDK {
   public:
@@ -39,9 +39,7 @@ class PandarGeneralSDK {
     PandarGeneralSDK(
         std::string device_ip,
         const uint16_t lidar_port,
-        const uint16_t gps_port,
         std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
-        std::function<void(double)> gps_callback,
         uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
@@ -55,5 +53,5 @@ class PandarGeneralSDK {
     void Stop();
 
   private:
-    std::unique_ptr<PandarGeneral_Internal> internal_;
+    std::unique_ptr<PandarLidarReceiver> internal_;
 };

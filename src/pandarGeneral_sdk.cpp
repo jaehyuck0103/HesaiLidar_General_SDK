@@ -24,14 +24,10 @@
 #include <cstdlib>
 #include <iostream>
 
-constexpr int PANDAR_TCP_COMMAND_PORT = 9347;
-
 PandarGeneralSDK::PandarGeneralSDK(
     std::string device_ip,
     const uint16_t lidar_port,
-    uint16_t gps_port,
     std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
-    std::function<void(double)> gps_callback,
     uint16_t start_azimuth,
     std::string lidar_type,
     std::string frame_id,
@@ -42,9 +38,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     if (lidar_type == "Pandar40P") {
         internal_ = std::make_unique<Pandar40P>(
             lidar_port,
-            gps_port,
             pcl_callback,
-            gps_callback,
             start_azimuth,
             lidar_type,
             frame_id,
@@ -54,9 +48,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     } else if (lidar_type == "Pandar64") {
         internal_ = std::make_unique<Pandar64>(
             lidar_port,
-            gps_port,
             pcl_callback,
-            gps_callback,
             start_azimuth,
             lidar_type,
             frame_id,
@@ -66,9 +58,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     } else if (lidar_type == "PandarQT") {
         internal_ = std::make_unique<PandarQT>(
             lidar_port,
-            gps_port,
             pcl_callback,
-            gps_callback,
             start_azimuth,
             lidar_type,
             frame_id,
@@ -78,9 +68,7 @@ PandarGeneralSDK::PandarGeneralSDK(
     } else if (lidar_type == "PandarXT-32" || lidar_type == "PandarXT-16") {
         internal_ = std::make_unique<PandarXT>(
             lidar_port,
-            gps_port,
             pcl_callback,
-            gps_callback,
             start_azimuth,
             lidar_type,
             frame_id,

@@ -90,9 +90,7 @@ int main() {
     PandarGeneralSDK pandarGeneral(
         "", // "192.168.1.201",
         2368,
-        10110,
         lidarCallback,
-        gpsCallback,
         0,
         "Pandar64",
         "frame_id",
