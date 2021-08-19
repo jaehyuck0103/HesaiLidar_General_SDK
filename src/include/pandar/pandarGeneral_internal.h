@@ -53,7 +53,6 @@ struct HS_LIDAR_Block {
 struct HS_LIDAR_Packet {
     std::vector<HS_LIDAR_Block> blocks;
     double timestamp;
-    uint8_t returnMode;
 };
 
 #define GPS_PACKET_SIZE (512)
@@ -88,7 +87,8 @@ class PandarGeneral_Internal {
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType,
-        int fps);
+        int fps,
+        bool dualReturnMode);
 
     virtual ~PandarGeneral_Internal();
 
@@ -139,7 +139,7 @@ class PandarGeneral_Internal {
     std::string m_sLidarType;
 
     bool isValidAzimuth(uint16_t azimuth) {
-        if (azimuth >= 0 && azimuth < 36000 && azimuth % azimuth_res_ == 0) {
+        if (azimuth < 36000 && azimuth % azimuth_res_ == 0) {
             return true;
         } else {
             return false;
@@ -155,6 +155,7 @@ class PandarGeneral_Internal {
     void CalcPointXYZIT(const HS_LIDAR_Packet &pkt, int blockid, double pktRcvTimestamp);
 
     int num_lasers_ = 0;
+    bool dualReturnMode_;
 
     std::vector<PointXYZIT> PointCloudList;
 };

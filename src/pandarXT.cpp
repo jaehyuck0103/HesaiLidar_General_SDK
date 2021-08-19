@@ -118,8 +118,12 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
 
     index += HS_LIDAR_XT_RESERVED_SIZE;
 
-    packet.returnMode = recvbuf[index];
-
+    uint8_t returnMode = recvbuf[index];
+    if (dualReturnMode_ != (returnMode >= 0x39)) {
+        std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
+                  << "\n";
+        return std::nullopt;
+    }
     index += HS_LIDAR_XT_ECHO_SIZE;
     index += HS_LIDAR_XT_ENGINE_VELOCITY;
 

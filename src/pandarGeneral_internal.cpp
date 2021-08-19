@@ -31,7 +31,8 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     std::string lidar_type,
     std::string frame_id,
     std::string timestampType,
-    int fps)
+    int fps,
+    bool dualReturnMode)
     : lidarRcvSocket_(io_context_, udp::endpoint(udp::v4(), lidar_port)),
       gpsRcvSocket_(io_context_, udp::endpoint(udp::v4(), gps_port)) {
 
@@ -42,6 +43,7 @@ PandarGeneral_Internal::PandarGeneral_Internal(
     frame_id_ = frame_id;
     m_sTimestampType = timestampType;
     fps_ = fps;
+    dualReturnMode_ = dualReturnMode;
 }
 
 PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
@@ -267,7 +269,7 @@ void PandarGeneral_Internal::CalcPointXYZIT(
         if ("realtime" == m_sTimestampType) {
             point.timestamp = pktRcvTimestamp;
         } else {
-            if (pkt.returnMode >= 0x39) {
+            if (dualReturnMode_) {
                 // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
                 point.timestamp =
                     pkt.timestamp +

@@ -46,7 +46,8 @@ int main() {
         "Pandar64",
         "frame_id",
         "",
-        10);
+        10,
+        true);
     pandarGeneral.Start();
 
     std::vector<PointXYZIT> cld;

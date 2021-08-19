@@ -48,7 +48,8 @@ class PandarGeneralSDK {
         std::string lidar_type,
         std::string frame_id,
         std::string timestampType, // the default timestamp type is LiDAR time
-        int fps);
+        int fps,
+        bool dualReturnMode);
 
     ~PandarGeneralSDK();
 

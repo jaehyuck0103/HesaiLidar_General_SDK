@@ -111,7 +111,12 @@ std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const std::vector<uint
                             recvbuf[index + 3] << 24;
     index += HS_LIDAR_QT_TIMESTAMP_SIZE;
 
-    packet.returnMode = recvbuf[index];
+    uint8_t returnMode = recvbuf[index];
+    if (dualReturnMode_ != (returnMode >= 0x39)) {
+        std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
+                  << "\n";
+        return std::nullopt;
+    }
     index += HS_LIDAR_QT_ECHO_SIZE;
     index += HS_LIDAR_QT_FACTORY_SIZE;
 
