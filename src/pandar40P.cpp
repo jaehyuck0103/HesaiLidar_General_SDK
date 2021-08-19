@@ -81,15 +81,10 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
             return std::nullopt;
         }
 
-        // 40 units
-        block.units.resize(HS_LIDAR_L40_LASER_COUNT);
-        for (auto &unit : block.units) {
-
-            unit.rawDistance = recvbuf[index] | recvbuf[index + 1] << 8;
-            unit.intensity = recvbuf[index + 2];
-
-            index += HS_LIDAR_L40_RAW_MEASURE_SIZE;
-        }
+        block.payload = std::vector<uint8_t>(
+            recvbuf.begin() + index,
+            recvbuf.begin() + index + 3 * num_lasers_);
+        index += 3 * num_lasers_;
     }
 
     index += HS_LIDAR_L40_RESERVE_SIZE;

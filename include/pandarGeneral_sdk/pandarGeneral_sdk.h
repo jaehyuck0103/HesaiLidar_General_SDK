@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "pandarGeneral_sdk/point_types.h"
-
 #include <functional>
 #include <memory>
 #include <string>
@@ -42,7 +40,7 @@ class PandarGeneralSDK {
         std::string device_ip,
         const uint16_t lidar_port,
         const uint16_t gps_port,
-        std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
+        std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_azimuth,
         std::string lidar_type,

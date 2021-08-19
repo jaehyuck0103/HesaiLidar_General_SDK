@@ -25,7 +25,7 @@ double degToRad(double degree) { return degree * M_PI / 180; }
 PandarGeneral_Internal::PandarGeneral_Internal(
     uint16_t lidar_port,
     uint16_t gps_port,
-    std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
+    std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
     std::function<void(double)> gps_callback,
     uint16_t start_azimuth,
     std::string lidar_type,
@@ -51,6 +51,15 @@ PandarGeneral_Internal::~PandarGeneral_Internal() { Stop(); }
 void PandarGeneral_Internal::Start() {
     Stop();
 
+    // Init frame_buffer_
+    // W x (1,2) x H x 3bytes
+    int frame_buffer_size = (36000 / azimuth_res_) * num_lasers_ * 3;
+    if (dualReturnMode_) {
+        frame_buffer_size *= 2;
+    }
+    frame_buffer_ = std::vector<uint8_t>(frame_buffer_size, 0);
+
+    // Start Thread
     enableRecvThr_ = true;
     if (pcl_callback_) {
         rcvLidarHandler();
@@ -181,13 +190,22 @@ void PandarGeneral_Internal::processLidarPacket(const std::vector<uint8_t> &pack
                 (start_azimuth_ <= curr_azimuth && curr_azimuth < last_azimuth) ||
                 (curr_azimuth < last_azimuth && last_azimuth < start_azimuth_)) {
 
-                if (PointCloudList.size() > 0) {
-                    pcl_callback_(PointCloudList, PointCloudList[0].timestamp);
-                    PointCloudList.clear();
-                }
+                pcl_callback_(frame_buffer_, timestamp.count());
+                std::fill(frame_buffer_.begin(), frame_buffer_.end(), 0);
             }
 
-            CalcPointXYZIT(*pkt, i, timestamp.count());
+            // Fill frame_buffer
+            const uint16_t azimuth_idx = curr_azimuth / azimuth_res_;
+            int buffer_idx = azimuth_idx * num_lasers_ * 3;
+            if (dualReturnMode_) {
+                buffer_idx = 2 * buffer_idx + (i % 2) * num_lasers_ * 3;
+            }
+            std::copy(
+                pkt->blocks[i].payload.begin(),
+                pkt->blocks[i].payload.end(),
+                frame_buffer_.begin() + buffer_idx);
+
+            // Save last_azimuth
             last_azimuth = curr_azimuth;
         }
     }
@@ -236,53 +254,4 @@ std::optional<PandarGPS> PandarGeneral_Internal::parseGPS(const std::vector<uint
                       recvbuf[index + 3] << 24;
 
     return packet;
-}
-
-void PandarGeneral_Internal::CalcPointXYZIT(
-    const HS_LIDAR_Packet &pkt,
-    int blockid,
-    double pktRcvTimestamp) {
-    const HS_LIDAR_Block &block = pkt.blocks[blockid];
-
-    for (int i = 0; i < num_lasers_; ++i) {
-        /* for all the units in a block */
-        const HS_LIDAR_Unit &unit = block.units[i];
-        PointXYZIT point;
-
-        float distance = unit.rawDistance * disUnit_;
-
-        /* skip wrong points */
-        if (distance < 0.1 || distance > 200.0) {
-            continue;
-        }
-
-        float xyDistance = distance * cosf(degToRad(elev_angle_map_[i]));
-        point.x =
-            xyDistance *
-            sinf(degToRad(azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
-        point.y =
-            xyDistance *
-            cosf(degToRad(azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
-        point.z = distance * sinf(degToRad(elev_angle_map_[i]));
-        point.intensity = unit.intensity;
-
-        if ("realtime" == m_sTimestampType) {
-            point.timestamp = pktRcvTimestamp;
-        } else {
-            if (dualReturnMode_) {
-                // dual return, block 0&1 (2&3 , 4*5 ...)'s timestamp is the same.
-                point.timestamp =
-                    pkt.timestamp +
-                    (static_cast<double>(blockOffsetDual_[blockid] + laserOffset_[i]) /
-                     1000000.0f);
-            } else {
-                point.timestamp =
-                    pkt.timestamp +
-                    (static_cast<double>(blockOffsetSingle_[blockid] + laserOffset_[i]) /
-                     1000000.0f);
-            }
-        }
-
-        PointCloudList.push_back(point);
-    }
 }

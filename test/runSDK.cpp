@@ -22,11 +22,55 @@
 
 pcl::visualization::CloudViewer viewer("Simple");
 
-tbb::concurrent_bounded_queue<std::vector<PointXYZIT>> con_queue;
+tbb::concurrent_bounded_queue<std::vector<uint8_t>> con_queue;
+
+double degToRad(double degree) { return degree * M_PI / 180; }
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr calcPointXYZI(const std::vector<uint8_t> &frame_buffer) {
+
+    int index = 0;
+    float dis_unit = 0.004;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+
+    for (int azimuth_idx = 0; azimuth_idx < 1800; ++azimuth_idx) {
+        for (int dual_mode_idx = 0; dual_mode_idx < 2; ++dual_mode_idx) {
+            for (int laser_idx = 0; laser_idx < 64; ++laser_idx) {
+                uint16_t raw_distance = frame_buffer[index] | frame_buffer[index + 1] << 8;
+                uint8_t intensity = frame_buffer[index + 2];
+
+                float distance = raw_distance * dis_unit;
+                if (distance < 0.1 || distance > 200.0) {
+                    index += 3;
+                    continue;
+                }
+
+                /*
+                float xyDistance = distance * cosf(degToRad(elev_angle_map_[i]));
+                point.x = xyDistance *
+                          sinf(degToRad(
+                              azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
+                point.y = xyDistance *
+                          cosf(degToRad(
+                              azimuth_offset_map_[i] + static_cast<float>(block.azimuth) / 100.0));
+                point.z = distance * sinf(degToRad(elev_angle_map_[i]));
+                point.intensity = unit.intensity;
+                */
+
+                float x = distance * sinf(degToRad(azimuth_idx * 0.2));
+                float y = distance * cosf(degToRad(azimuth_idx * 0.2));
+                float z = 0;
+                cloud->emplace_back(x, y, z);
+
+                index += 3;
+            }
+        }
+    }
+    return cloud;
+}
 
 void gpsCallback(int timestamp) { printf("gps: %d\n", timestamp); }
 
-void lidarCallback(const std::vector<PointXYZIT> &cld, double timestamp) {
+void lidarCallback(const std::vector<uint8_t> &cld, double timestamp) {
     printf("timestamp: %lf,point_size: %ld\n", timestamp, cld.size());
 
     con_queue.try_push(cld);
@@ -50,14 +94,10 @@ int main() {
         true);
     pandarGeneral.Start();
 
-    std::vector<PointXYZIT> cld;
+    std::vector<uint8_t> cld;
     while (true) {
         con_queue.pop(cld);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud =
-            pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        for (const auto &pt : cld) {
-            cloud->emplace_back(pt.x, pt.y, pt.z);
-        }
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = calcPointXYZI(cld);
         viewer.showCloud(cloud);
     }
 

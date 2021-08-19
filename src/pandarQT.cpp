@@ -77,7 +77,7 @@ std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const std::vector<uint
         std::cout << "Error protocalVerMajor!\n";
         return std::nullopt;
     }
-    if (nLasers != 0x40) {
+    if (nLasers != num_lasers_) {
         std::cout << "Error nLasers!\n";
         return std::nullopt;
     }
@@ -96,12 +96,10 @@ std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const std::vector<uint
         block.azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
         index += HS_LIDAR_QT_BLOCK_HEADER_AZIMUTH;
 
-        block.units.resize(nLasers);
-        for (auto &unit : block.units) {
-            unit.rawDistance = recvbuf[index] | recvbuf[index + 1] << 8;
-            unit.intensity = recvbuf[index + 2];
-            index += HS_LIDAR_QT_UNIT_SIZE;
-        }
+        block.payload = std::vector<uint8_t>(
+            recvbuf.begin() + index,
+            recvbuf.begin() + index + 3 * num_lasers_);
+        index += 3 * num_lasers_;
     }
 
     index += HS_LIDAR_QT_RESERVED_SIZE;

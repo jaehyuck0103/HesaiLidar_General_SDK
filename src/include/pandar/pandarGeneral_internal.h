@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "pandarGeneral_sdk/point_types.h"
-
 #include <asio.hpp>
 
 #include <functional>
@@ -40,14 +38,9 @@ inline double parseUTC(const uint8_t *buf) {
     return static_cast<double>(std::mktime(&tTm));
 }
 
-struct HS_LIDAR_Unit {
-    uint16_t rawDistance; // distance (meter) = rawDistance * 0.004
-    uint8_t intensity;
-};
-
 struct HS_LIDAR_Block {
-    uint16_t azimuth; // Azimuth = RealAzimuth * 100
-    std::vector<HS_LIDAR_Unit> units;
+    uint16_t azimuth;             // Azimuth = RealAzimuth * 100
+    std::vector<uint8_t> payload; // num_lasers * 3 bytes (2bytes raw_distance + 1byte intensity)
 };
 
 struct HS_LIDAR_Packet {
@@ -81,7 +74,7 @@ class PandarGeneral_Internal {
     PandarGeneral_Internal(
         uint16_t lidar_port,
         uint16_t gps_port,
-        std::function<void(const std::vector<PointXYZIT> &, double)> pcl_callback,
+        std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
         std::function<void(double)> gps_callback,
         uint16_t start_azimuth,
         std::string lidar_type,
@@ -103,12 +96,14 @@ class PandarGeneral_Internal {
 
     std::optional<PandarGPS> parseGPS(const std::vector<uint8_t> &recvbuf);
 
-    std::function<void(const std::vector<PointXYZIT> &cld, double timestamp)> pcl_callback_;
+    std::function<void(const std::vector<uint8_t> &cld, double timestamp)> pcl_callback_;
     std::function<void(double timestamp)> gps_callback_;
 
     std::string frame_id_;
 
     static constexpr float disUnit_ = 0.004; // 4mm
+
+    std::vector<uint8_t> frame_buffer_;
 
   private: // asio
     asio::io_context io_context_;
@@ -145,6 +140,7 @@ class PandarGeneral_Internal {
             return false;
         }
     }
+
     uint16_t start_azimuth_;
     uint16_t azimuth_res_;
     int fps_;
@@ -152,10 +148,6 @@ class PandarGeneral_Internal {
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &packet) = 0;
 
-    void CalcPointXYZIT(const HS_LIDAR_Packet &pkt, int blockid, double pktRcvTimestamp);
-
     int num_lasers_ = 0;
     bool dualReturnMode_;
-
-    std::vector<PointXYZIT> PointCloudList;
 };
