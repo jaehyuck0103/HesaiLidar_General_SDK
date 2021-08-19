@@ -8,68 +8,66 @@ PandarLidarReceiver::PandarLidarReceiver(
     uint16_t start_azimuth,
     std::string lidar_type,
     std::string frame_id,
-    std::string timestampType,
+    std::string timestamp_type,
     int fps,
-    bool dualReturnMode)
-    : lidarRcvSocket_(io_context_, udp::endpoint(udp::v4(), lidar_port)) {
+    bool dual_return_mode)
+    : pcl_callback_(pcl_callback),
+      start_azimuth_(start_azimuth),
+      frame_id_(frame_id),
+      timestamp_type_(timestamp_type),
+      lidar_type_(lidar_type),
+      fps_(fps),
+      dual_return_mode_(dual_return_mode),
+      socket_(io_context_, udp::endpoint(udp::v4(), lidar_port)) {}
 
-    pcl_callback_ = pcl_callback;
-    start_azimuth_ = start_azimuth;
-    m_sLidarType = lidar_type;
-    frame_id_ = frame_id;
-    m_sTimestampType = timestampType;
-    fps_ = fps;
-    dualReturnMode_ = dualReturnMode;
-}
+PandarLidarReceiver::~PandarLidarReceiver() { stop(); }
 
-PandarLidarReceiver::~PandarLidarReceiver() { Stop(); }
-
-void PandarLidarReceiver::Start() {
-    Stop();
+void PandarLidarReceiver::start() {
+    stop();
 
     // Init frame_buffer_
     // W x (1,2) x H x 3bytes
     int frame_buffer_size = (36000 / azimuth_res_) * num_lasers_ * 3;
-    if (dualReturnMode_) {
+    if (dual_return_mode_) {
         frame_buffer_size *= 2;
     }
     frame_buffer_ = std::vector<uint8_t>(frame_buffer_size, 0);
 
     // Start Thread
-    enableRecvThr_ = true;
+    enable_recv_flag_ = true;
     if (pcl_callback_) {
-        rcvLidarHandler();
+        socketRecvHandler();
     };
-    contextThr_ = std::make_unique<std::thread>([this]() { io_context_.run(); });
+    context_thr_ = std::make_unique<std::thread>([this]() { io_context_.run(); });
 }
 
-void PandarLidarReceiver::Stop() {
-    enableRecvThr_ = false;
+void PandarLidarReceiver::stop() {
+    enable_recv_flag_ = false;
 
-    if (contextThr_ && contextThr_->joinable()) {
-        contextThr_->join();
+    if (context_thr_ && context_thr_->joinable()) {
+        context_thr_->join();
     }
 }
 
-void PandarLidarReceiver::rcvLidarHandler() {
+void PandarLidarReceiver::socketRecvHandler() {
 
-    if (!enableRecvThr_) {
+    if (!enable_recv_flag_) {
         return;
     }
 
-    lidarRcvBuffer_.resize(1500);
-    lidarRcvSocket_.async_receive_from(
-        asio::buffer(lidarRcvBuffer_),
-        lidarRemoteEndpoint_,
+    recv_buffer_.resize(1500);
+    socket_.async_receive_from(
+        asio::buffer(recv_buffer_),
+        remote_endpoint_,
         [this](const asio::error_code &ec, std::size_t bytes) {
             if (ec) {
                 std::cout << ec.message() << std::endl;
             } else {
-                lidarRcvBuffer_.resize(bytes);
-                processLidarPacket(lidarRcvBuffer_);
+                recv_buffer_.resize(bytes);
+                processLidarPacket(recv_buffer_);
             }
 
-            rcvLidarHandler();
+            socketRecvHandler();
         });
 }
 
@@ -100,7 +98,7 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
             // Fill frame_buffer
             const uint16_t azimuth_idx = curr_azimuth / azimuth_res_;
             int buffer_idx = azimuth_idx * num_lasers_ * 3;
-            if (dualReturnMode_) {
+            if (dual_return_mode_) {
                 buffer_idx = 2 * buffer_idx + (i % 2) * num_lasers_ * 3;
             }
             std::copy(

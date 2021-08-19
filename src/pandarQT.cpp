@@ -91,7 +91,7 @@ std::optional<HS_LIDAR_Packet> PandarQT::parseLidarPacket(const std::vector<uint
     index += HS_LIDAR_QT_TIMESTAMP_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dualReturnMode_ != (returnMode >= 0x39)) {
+    if (dual_return_mode_ != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;

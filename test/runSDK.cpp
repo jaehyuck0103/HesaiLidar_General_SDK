@@ -97,7 +97,7 @@ int main() {
         "",
         10,
         true);
-    pandarGeneral.Start();
+    pandarGeneral.start();
 
     std::vector<float> elev_angle;
     std::vector<float> azimuth_offset;

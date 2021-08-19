@@ -9,7 +9,7 @@ void PandarXT::Init() {
         laserOffset_.push_back(1.512f * i + 0.28f);
     }
 
-    if (m_sLidarType == "PandarXT-16") {
+    if (lidar_type_ == "PandarXT-16") {
         for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
             laserOffset_[i] = laserOffset_[i * 2];
         }
@@ -36,7 +36,7 @@ void PandarXT::Init() {
         3.28f - 50.0f * 0.0f,
         3.28f - 50.0f * 0.0f};
 
-    if (m_sLidarType == "PandarXT-16") {
+    if (lidar_type_ == "PandarXT-16") {
         num_lasers_ = 16;
     } else {
         num_lasers_ = 32;
@@ -106,7 +106,7 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
     index += HS_LIDAR_XT_RESERVED_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dualReturnMode_ != (returnMode >= 0x39)) {
+    if (dual_return_mode_ != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;

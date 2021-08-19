@@ -40,44 +40,32 @@ class PandarLidarReceiver {
         uint16_t start_azimuth,
         std::string lidar_type,
         std::string frame_id,
-        std::string timestampType,
+        std::string timestamp_type,
         int fps,
-        bool dualReturnMode);
+        bool dual_return_mode);
 
     virtual ~PandarLidarReceiver();
 
-    void Start();
-    void Stop();
+    void start();
+    void stop();
 
   private:
     void processLidarPacket(const std::vector<uint8_t> &packet);
 
-    std::function<void(const std::vector<uint8_t> &cld, double timestamp)> pcl_callback_;
+    const std::function<void(const std::vector<uint8_t> &cld, double timestamp)> pcl_callback_;
+    const uint16_t start_azimuth_;
 
-    std::string frame_id_;
+    const std::string frame_id_;
 
     std::vector<uint8_t> frame_buffer_;
-
-  private: // asio
-    asio::io_context io_context_;
-    udp::socket lidarRcvSocket_;
-
-    std::unique_ptr<std::thread> contextThr_;
-    bool enableRecvThr_ = false;
-
-    std::vector<uint8_t> lidarRcvBuffer_;
-
-    udp::endpoint lidarRemoteEndpoint_;
-
-    void rcvLidarHandler();
 
   protected:
     std::vector<float> blockOffsetSingle_;
     std::vector<float> blockOffsetDual_;
     std::vector<float> laserOffset_;
 
-    std::string m_sTimestampType;
-    std::string m_sLidarType;
+    const std::string timestamp_type_;
+    const std::string lidar_type_;
 
     bool isValidAzimuth(uint16_t azimuth) {
         if (azimuth < 36000 && azimuth % azimuth_res_ == 0) {
@@ -87,13 +75,25 @@ class PandarLidarReceiver {
         }
     }
 
-    uint16_t start_azimuth_;
     uint16_t azimuth_res_;
-    int fps_;
+    const int fps_;
 
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &packet) = 0;
 
     int num_lasers_ = 0;
-    bool dualReturnMode_;
+    const bool dual_return_mode_;
+
+  private: // asio
+    asio::io_context io_context_;
+    udp::socket socket_;
+
+    std::unique_ptr<std::thread> context_thr_;
+    bool enable_recv_flag_ = false;
+
+    std::vector<uint8_t> recv_buffer_;
+
+    udp::endpoint remote_endpoint_;
+
+    void socketRecvHandler();
 };

@@ -83,7 +83,7 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
     index += HS_LIDAR_L40_TIMESTAMP_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dualReturnMode_ != (returnMode >= 0x39)) {
+    if (dual_return_mode_ != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;
