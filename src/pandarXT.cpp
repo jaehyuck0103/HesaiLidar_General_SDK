@@ -2,41 +2,6 @@
 
 #include <iostream>
 
-void PandarXT::Init() {
-
-    laserOffset_.clear();
-    for (int i = 0; i < HS_LIDAR_XT_UNIT_NUM; ++i) {
-        laserOffset_.push_back(1.512f * i + 0.28f);
-    }
-
-    if (cfg_.lidar_model() == LidarModel::PandarXT_16) {
-        for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
-            laserOffset_[i] = laserOffset_[i * 2];
-        }
-        laserOffset_.resize(16);
-    }
-
-    blockOffsetSingle_ = {
-        3.28f - 50.0f * 7.0f,
-        3.28f - 50.0f * 6.0f,
-        3.28f - 50.0f * 5.0f,
-        3.28f - 50.0f * 4.0f,
-        3.28f - 50.0f * 3.0f,
-        3.28f - 50.0f * 2.0f,
-        3.28f - 50.0f * 1.0f,
-        3.28f - 50.0f * 0.0f};
-
-    blockOffsetDual_ = {
-        3.28f - 50.0f * 3.0f,
-        3.28f - 50.0f * 3.0f,
-        3.28f - 50.0f * 2.0f,
-        3.28f - 50.0f * 2.0f,
-        3.28f - 50.0f * 1.0f,
-        3.28f - 50.0f * 1.0f,
-        3.28f - 50.0f * 0.0f,
-        3.28f - 50.0f * 0.0f};
-}
-
 std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
 
     if (recvbuf.size() != HS_LIDAR_XT_PACKET_SIZE && recvbuf.size() != HS_LIDAR_XT16_PACKET_SIZE) {

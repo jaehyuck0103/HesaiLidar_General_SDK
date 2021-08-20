@@ -33,13 +33,9 @@
 class PandarXT : public PandarLidarReceiver {
   public:
     template <typename... Args>
-    PandarXT(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
-        Init();
-    }
+    PandarXT(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {}
 
   private:
-    void Init();
-
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &recvbuf) final;
 };

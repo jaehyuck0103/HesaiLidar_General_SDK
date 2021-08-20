@@ -56,10 +56,6 @@ class PandarLidarReceiver {
   protected:
     const PandarConfig cfg_;
 
-    std::vector<float> blockOffsetSingle_;
-    std::vector<float> blockOffsetDual_;
-    std::vector<float> laserOffset_;
-
     bool isValidAzimuth(uint16_t azimuth) {
         if (azimuth < 36000 && azimuth % cfg_.azimuth_res() == 0) {
             return true;

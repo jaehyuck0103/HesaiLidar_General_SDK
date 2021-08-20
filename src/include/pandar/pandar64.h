@@ -44,13 +44,9 @@ class Pandar64 : public PandarLidarReceiver {
 
   public:
     template <typename... Args>
-    Pandar64(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {
-        Init();
-    }
+    Pandar64(Args &&...args) : PandarLidarReceiver(std::forward<Args>(args)...) {}
 
   private:
-    void Init();
-
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &recvbuf) final;
 };
