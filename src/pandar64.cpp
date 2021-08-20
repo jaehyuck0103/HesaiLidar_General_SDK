@@ -4,20 +4,20 @@
 
 std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
 
-    if (recvbuf.size() != HS_LIDAR_L64_PACKET_SIZE &&
-        recvbuf.size() != HS_LIDAR_L64_PACKET_WITHOUT_UDPSEQ_SIZE) {
+    int index = 0;
+
+    // Check Packet Size
+    if (recvbuf.size() != 1194 && recvbuf.size() != 1198) {
         std::cout << "Packet Size Mismatch (Pandar64): " << recvbuf.size() << "\n";
         return std::nullopt;
     }
-
-    int index = 0;
 
     // Parse 8 Bytes Header
     uint16_t sop = recvbuf[index] << 8 | recvbuf[index + 1];
     uint8_t nLasers = recvbuf[index + 2]; // 64
     uint8_t nBlocks = recvbuf[index + 3]; // 6
     uint8_t disUnit = recvbuf[index + 5]; // 4(mm)
-    index += HS_LIDAR_L64_HEAD_SIZE;
+    index += 8;                           // header
 
     if (sop != 0xEEFF) {
         std::cout << "Error Start of Packet!\n";
@@ -40,20 +40,20 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint
     packet.blocks.resize(nBlocks);
     for (auto &block : packet.blocks) {
         block.azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
-        index += HS_LIDAR_L64_BLOCK_HEADER_AZIMUTH;
+        index += 2; // azimuth
 
         block.payload = std::vector<uint8_t>(
             recvbuf.begin() + index,
-            recvbuf.begin() + index + 3 * cfg_.num_lasers());
-        index += 3 * cfg_.num_lasers();
+            recvbuf.begin() + index + cfg_.elem_bytes * cfg_.num_lasers());
+        index += cfg_.elem_bytes * cfg_.num_lasers(); // block payload
     }
 
-    index += HS_LIDAR_L64_RESERVED_SIZE;
-    index += HS_LIDAR_L64_ENGINE_VELOCITY;
+    index += 8; // reserved
+    index += 2; // motor speed
 
     uint32_t timestamp_us = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
                             recvbuf[index + 3] << 24;
-    index += HS_LIDAR_L64_TIMESTAMP_SIZE;
+    index += 4; // GPS Timestamp
 
     uint8_t returnMode = recvbuf[index];
     if (cfg_.dual_return_mode() != (returnMode >= 0x39)) {
@@ -61,11 +61,11 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint
                   << "\n";
         return std::nullopt;
     }
-    index += HS_LIDAR_L64_RETURN_MODE_SIZE;
-    index += HS_LIDAR_L64_FACTORY_SIZE;
+    index += 1; // return mode
+    index += 1; // factory info
 
     packet.timestamp = parseUTC(&recvbuf[index]) + timestamp_us / 1000000.0;
-    index += HS_LIDAR_L64_TIME_SIZE;
+    index += 6; // Date & Time
 
     return packet;
 }

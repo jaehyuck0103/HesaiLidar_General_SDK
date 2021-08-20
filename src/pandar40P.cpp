@@ -4,21 +4,21 @@
 
 std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
 
-    if (recvbuf.size() != HS_LIDAR_L40_PACKET_SIZE &&
-        recvbuf.size() != HS_LIDAR_L40_PACKET_SIZE + HS_LIDAR_L40_SEQ_NUM_SIZE) {
-        std::cout << "Packet Size Mismatch (Pandar40): " << recvbuf.size() << "\n";
+    int index = 0;
+
+    // Check Packet Size
+    if (recvbuf.size() != 1262 && recvbuf.size() != 1266) {
+        std::cout << "Packet Size Mismatch (Pandar40P): " << recvbuf.size() << "\n";
         return std::nullopt;
     }
 
-    int index = 0;
     HS_LIDAR_Packet packet;
-    // 10 BLOCKs
-    packet.blocks.resize(HS_LIDAR_L40_BLOCKS_PER_PACKET);
+    packet.blocks.resize(10); // 10 blocks
     for (auto &block : packet.blocks) {
 
         uint16_t sob = recvbuf[index] | recvbuf[index + 1] << 8;
         block.azimuth = recvbuf[index + 2] | recvbuf[index + 3] << 8;
-        index += HS_LIDAR_L40_SOB_SIZE;
+        index += 4; // sob + azimuth
 
         if (sob != 0xEEFF) {
             std::cout << "Error Start of Block!\n";
@@ -27,16 +27,16 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
 
         block.payload = std::vector<uint8_t>(
             recvbuf.begin() + index,
-            recvbuf.begin() + index + 3 * cfg_.num_lasers());
-        index += 3 * cfg_.num_lasers();
+            recvbuf.begin() + index + cfg_.elem_bytes * cfg_.num_lasers());
+        index += cfg_.elem_bytes * cfg_.num_lasers(); // block payload
     }
 
-    index += HS_LIDAR_L40_RESERVE_SIZE;
-    index += HS_LIDAR_L40_REVOLUTION_SIZE;
+    index += 8; // reserved
+    index += 2; // motor speed
 
     uint32_t timestamp_us = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
                             recvbuf[index + 3] << 24;
-    index += HS_LIDAR_L40_TIMESTAMP_SIZE;
+    index += 4; // timestamp
 
     uint8_t returnMode = recvbuf[index];
     if (cfg_.dual_return_mode() != (returnMode >= 0x39)) {
@@ -45,10 +45,11 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
         return std::nullopt;
     }
 
-    index += HS_LIDAR_L40_FACTORY_INFO_SIZE + HS_LIDAR_L40_ECHO_SIZE;
+    index += 1; // return mode
+    index += 1; // factory info
 
     packet.timestamp = parseUTC(&recvbuf[index]) + timestamp_us / 1000000.0;
-    index += HS_LIDAR_L40_UTC_TIME;
+    index += 6; // Date & Time
 
     return packet;
 }
