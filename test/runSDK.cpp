@@ -1,5 +1,5 @@
-#include "pandarGeneral_sdk/pandarGeneral_sdk.h"
 #include "pandarGeneral_sdk/pandar_config.h"
+#include "pandarGeneral_sdk/pandar_lidar_receiver.h"
 #include "pandarGeneral_sdk/pandar_utils.h"
 
 #include <pcl/visualization/cloud_viewer.h>
@@ -77,8 +77,8 @@ int main() {
         angle_corrections->first,
         angle_corrections->second};
 
-    PandarGeneralSDK pandarGeneral(
-        "", // "192.168.1.201",
+    PandarLidarReceiver pandarGeneral(
+        // "", // "192.168.1.201",
         2368,
         lidarCallback,
         pandar_config);

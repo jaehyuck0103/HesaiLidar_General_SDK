@@ -1,4 +1,4 @@
-#include "pandar/pandar_lidar_receiver.h"
+#include "pandarGeneral_sdk/pandar_lidar_receiver.h"
 
 #include <iostream>
 
@@ -13,6 +13,30 @@ PandarLidarReceiver::PandarLidarReceiver(
     // Init frame_buffer_
     // W x (1,2) x H x 3bytes
     frame_buffer_ = std::vector<uint8_t>(cfg_.frame_buffer_bytes(), 0);
+
+    switch (cfg_.lidar_model()) {
+    case LidarModel::Pandar40P:
+        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+            return PandarPacketParsers::pandar40p(cfg_, packet);
+        };
+        break;
+    case LidarModel::Pandar64:
+        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+            return PandarPacketParsers::pandar64(cfg_, packet);
+        };
+        break;
+    case LidarModel::PandarQT:
+        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+            return PandarPacketParsers::pandarQT(cfg_, packet);
+        };
+        break;
+    case LidarModel::PandarXT_16:
+    case LidarModel::PandarXT_32:
+        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+            return PandarPacketParsers::pandarXT(cfg_, packet);
+        };
+        break;
+    }
 }
 
 PandarLidarReceiver::~PandarLidarReceiver() { stop(); }

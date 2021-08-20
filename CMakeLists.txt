@@ -20,15 +20,8 @@ target_link_libraries(asio INTERFACE pthread)
 
 add_library(
   ${PROJECT_NAME} SHARED
-  src/pandarGeneral_sdk.cpp
-  src/pandar_gps_receiver.cpp
-  src/pandar_lidar_receiver.cpp
-  src/tcp_command_client.cpp
-  src/pandar_utils.cpp
-  src/pandar40P.cpp
-  src/pandar64.cpp
-  src/pandarQT.cpp
-  src/pandarXT.cpp)
+  src/pandar_gps_receiver.cpp src/pandar_lidar_receiver.cpp
+  src/pandar_packet_parsers.cpp src/tcp_command_client.cpp src/pandar_utils.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include src/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE asio)
 
@@ -38,7 +31,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   add_executable(runSDK test/runSDK.cpp)
   target_include_directories(runSDK PRIVATE include ${PCL_INCLUDE_DIRS})
   target_link_libraries(runSDK PRIVATE ${PROJECT_NAME} ${PCL_LIBRARIES} pthread
-                                       tbb)
+                                       tbb asio)
 
   add_executable(sendPcap test/sendPcapPacket.cpp test/pcap_reader.cpp)
   target_link_libraries(sendPcap PRIVATE pcap asio)
