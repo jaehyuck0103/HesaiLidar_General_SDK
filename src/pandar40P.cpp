@@ -33,17 +33,6 @@ void Pandar40P::Init() {
                     -14.74f, -36.98f, -45.49f, -52.7f, -23.89f, -31.7447f, -38.95f, -11.47f,
                     -18.65f, -25.19f, -48.76f, -6.23f, -12.77f, -35.01f,   -21.92f, -9.5f,
                     -43.52f, -29.77f, -17.35f, -4.92f, -42.22f, -28.47f,   -16.04f, -3.62f};
-
-    num_lasers_ = 40;
-
-    if (fps_ == 10) {
-        azimuth_res_ = 20;
-    } else if (fps_ == 20) {
-        azimuth_res_ = 40;
-    } else {
-        std::cout << "Unavailable FPS: " << fps_ << std::endl;
-        std::terminate();
-    }
 }
 
 std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
@@ -71,8 +60,8 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
 
         block.payload = std::vector<uint8_t>(
             recvbuf.begin() + index,
-            recvbuf.begin() + index + 3 * num_lasers_);
-        index += 3 * num_lasers_;
+            recvbuf.begin() + index + 3 * cfg_.num_lasers());
+        index += 3 * cfg_.num_lasers();
     }
 
     index += HS_LIDAR_L40_RESERVE_SIZE;
@@ -83,7 +72,7 @@ std::optional<HS_LIDAR_Packet> Pandar40P::parseLidarPacket(const std::vector<uin
     index += HS_LIDAR_L40_TIMESTAMP_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dual_return_mode_ != (returnMode >= 0x39)) {
+    if (cfg_.dual_return_mode() != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;

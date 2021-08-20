@@ -9,7 +9,7 @@ void PandarXT::Init() {
         laserOffset_.push_back(1.512f * i + 0.28f);
     }
 
-    if (lidar_type_ == "PandarXT-16") {
+    if (cfg_.lidar_model() == LidarModel::PandarXT_16) {
         for (int i = 0; i < HS_LIDAR_XT16_UNIT_NUM; i++) {
             laserOffset_[i] = laserOffset_[i * 2];
         }
@@ -35,23 +35,6 @@ void PandarXT::Init() {
         3.28f - 50.0f * 1.0f,
         3.28f - 50.0f * 0.0f,
         3.28f - 50.0f * 0.0f};
-
-    if (lidar_type_ == "PandarXT-16") {
-        num_lasers_ = 16;
-    } else {
-        num_lasers_ = 32;
-    }
-
-    if (fps_ == 5) {
-        azimuth_res_ = 9;
-    } else if (fps_ == 10) {
-        azimuth_res_ = 18;
-    } else if (fps_ == 20) {
-        azimuth_res_ = 36;
-    } else {
-        std::cout << "Unavailable FPS: " << fps_ << std::endl;
-        std::terminate();
-    }
 }
 
 std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
@@ -78,7 +61,7 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
         std::cout << "Error protocalVerMajor!\n";
         return std::nullopt;
     }
-    if (static_cast<int>(nLasers) != num_lasers_) {
+    if (static_cast<int>(nLasers) != cfg_.num_lasers()) {
         std::cout << "Error nLasers!\n";
         return std::nullopt;
     }
@@ -99,14 +82,14 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
 
         block.payload = std::vector<uint8_t>(
             recvbuf.begin() + index,
-            recvbuf.begin() + index + 3 * num_lasers_);
-        index += 3 * num_lasers_;
+            recvbuf.begin() + index + 3 * cfg_.num_lasers());
+        index += 3 * cfg_.num_lasers();
     }
 
     index += HS_LIDAR_XT_RESERVED_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dual_return_mode_ != (returnMode >= 0x39)) {
+    if (cfg_.dual_return_mode() != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;

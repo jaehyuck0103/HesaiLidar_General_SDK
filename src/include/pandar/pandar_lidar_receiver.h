@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pandarGeneral_sdk/pandar_config.h"
+
 #include <asio.hpp>
 
 #include <functional>
@@ -37,12 +39,7 @@ class PandarLidarReceiver {
     PandarLidarReceiver(
         uint16_t lidar_port,
         std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
-        uint16_t start_azimuth,
-        std::string lidar_type,
-        std::string frame_id,
-        std::string timestamp_type,
-        int fps,
-        bool dual_return_mode);
+        const PandarConfig &cfg);
 
     virtual ~PandarLidarReceiver();
 
@@ -53,36 +50,26 @@ class PandarLidarReceiver {
     void processLidarPacket(const std::vector<uint8_t> &packet);
 
     const std::function<void(const std::vector<uint8_t> &cld, double timestamp)> pcl_callback_;
-    const uint16_t start_azimuth_;
-
-    const std::string frame_id_;
 
     std::vector<uint8_t> frame_buffer_;
 
   protected:
+    const PandarConfig cfg_;
+
     std::vector<float> blockOffsetSingle_;
     std::vector<float> blockOffsetDual_;
     std::vector<float> laserOffset_;
 
-    const std::string timestamp_type_;
-    const std::string lidar_type_;
-
     bool isValidAzimuth(uint16_t azimuth) {
-        if (azimuth < 36000 && azimuth % azimuth_res_ == 0) {
+        if (azimuth < 36000 && azimuth % cfg_.azimuth_res() == 0) {
             return true;
         } else {
             return false;
         }
     }
 
-    uint16_t azimuth_res_;
-    const int fps_;
-
     virtual std::optional<HS_LIDAR_Packet>
     parseLidarPacket(const std::vector<uint8_t> &packet) = 0;
-
-    int num_lasers_ = 0;
-    const bool dual_return_mode_;
 
   private: // asio
     asio::io_context io_context_;

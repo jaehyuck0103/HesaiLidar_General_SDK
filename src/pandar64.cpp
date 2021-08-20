@@ -53,17 +53,6 @@ void Pandar64::Init() {
         -(1.304f * 5.0f + 1.968f * 0.0f + 3.62f),   -(1.304f * 1.0f + 1.968f * 0.0f + 3.62f),
         -(1.304f * 0.0f + 1.968f * 0.0f + 3.62f),   -(1.304f * 8.0f + 1.968f * 0.0f + 3.62f),
         -(1.304f * 4.0f + 1.968f * 0.0f + 3.62f),   -(1.304f * 7.0f + 1.968f * 0.0f + 3.62f)};
-
-    num_lasers_ = 64;
-
-    if (fps_ == 10) {
-        azimuth_res_ = 20;
-    } else if (fps_ == 20) {
-        azimuth_res_ = 40;
-    } else {
-        std::cout << "Unavailable FPS: " << fps_ << std::endl;
-        std::terminate();
-    }
 }
 
 std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint8_t> &recvbuf) {
@@ -87,7 +76,7 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint
         std::cout << "Error Start of Packet!\n";
         return std::nullopt;
     }
-    if (nLasers != num_lasers_) {
+    if (nLasers != cfg_.num_lasers()) {
         std::cout << "Error nLasers!\n";
         return std::nullopt;
     }
@@ -108,8 +97,8 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint
 
         block.payload = std::vector<uint8_t>(
             recvbuf.begin() + index,
-            recvbuf.begin() + index + 3 * num_lasers_);
-        index += 3 * num_lasers_;
+            recvbuf.begin() + index + 3 * cfg_.num_lasers());
+        index += 3 * cfg_.num_lasers();
     }
 
     index += HS_LIDAR_L64_RESERVED_SIZE;
@@ -120,7 +109,7 @@ std::optional<HS_LIDAR_Packet> Pandar64::parseLidarPacket(const std::vector<uint
     index += HS_LIDAR_L64_TIMESTAMP_SIZE;
 
     uint8_t returnMode = recvbuf[index];
-    if (dual_return_mode_ != (returnMode >= 0x39)) {
+    if (cfg_.dual_return_mode() != (returnMode >= 0x39)) {
         std::cout << "Return Mode Mismatch: 0x" << std::hex << static_cast<int>(returnMode)
                   << "\n";
         return std::nullopt;
