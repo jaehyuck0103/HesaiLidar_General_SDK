@@ -41,16 +41,21 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
         return std::nullopt;
     }
 
+    // Parse body
     HS_LIDAR_Packet packet;
     packet.blocks.resize(nBlocks);
     for (auto &block : packet.blocks) {
         block.azimuth = recvbuf[index] | recvbuf[index + 1] << 8;
         index += 2; // azimuth
 
-        block.payload = std::vector<uint8_t>(
-            recvbuf.begin() + index,
-            recvbuf.begin() + index + cfg_.elem_bytes * cfg_.num_lasers());
-        index += cfg_.elem_bytes * cfg_.num_lasers(); // block payload
+        block.payload.resize(cfg_.elem_bytes * cfg_.num_lasers());
+        for (int i = 0; i < cfg_.num_lasers(); ++i) {
+            std::copy(
+                recvbuf.begin() + index,
+                recvbuf.begin() + index + cfg_.elem_bytes,
+                block.payload.begin() + i * cfg_.elem_bytes);
+            index += cfg_.elem_bytes + 1; // 3bytes (raw_distance + intensity) + 1byte reserved
+        }
     }
 
     index += 10; // reserved
@@ -70,6 +75,7 @@ std::optional<HS_LIDAR_Packet> PandarXT::parseLidarPacket(const std::vector<uint
     uint32_t timestamp_us = recvbuf[index] | recvbuf[index + 1] << 8 | recvbuf[index + 2] << 16 |
                             recvbuf[index + 3] << 24;
     packet.timestamp += timestamp_us / 1000000.0;
+    index += 4; // Timestamp
 
     return packet;
 }
