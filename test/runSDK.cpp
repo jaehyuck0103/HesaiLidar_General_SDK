@@ -1,6 +1,6 @@
-#include "pandarGeneral_sdk/pandar_config.h"
-#include "pandarGeneral_sdk/pandar_lidar_receiver.h"
-#include "pandarGeneral_sdk/pandar_utils.h"
+#include "pandar/pandar_config.h"
+#include "pandar/pandar_lidar_receiver.h"
+#include "pandar/pandar_utils.h"
 
 #include <pcl/visualization/cloud_viewer.h>
 #include <tbb/concurrent_queue.h>

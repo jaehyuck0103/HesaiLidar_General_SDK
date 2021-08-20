@@ -12,8 +12,6 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_VERBOSE_MAKEFILE true)
 
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-
 add_library(asio INTERFACE)
 target_include_directories(asio INTERFACE extern/asio/asio/include)
 target_link_libraries(asio INTERFACE pthread)
@@ -22,7 +20,7 @@ add_library(
   ${PROJECT_NAME} SHARED
   src/pandar_gps_receiver.cpp src/pandar_lidar_receiver.cpp
   src/pandar_packet_parsers.cpp src/tcp_command_client.cpp src/pandar_utils.cpp)
-target_include_directories(${PROJECT_NAME} PRIVATE include src/include)
+target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_link_libraries(${PROJECT_NAME} PRIVATE asio)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,4 +1,5 @@
-#include "pandarGeneral_sdk/pandar_lidar_receiver.h"
+#include "pandar/pandar_lidar_receiver.h"
+#include "pandar_packet_parsers.h"
 
 #include <iostream>
 

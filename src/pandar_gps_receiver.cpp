@@ -1,4 +1,4 @@
-#include "pandarGeneral_sdk/pandar_gps_receiver.h"
+#include "pandar/pandar_gps_receiver.h"
 
 #include <iostream>
 

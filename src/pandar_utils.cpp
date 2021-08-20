@@ -1,6 +1,6 @@
-#include "pandarGeneral_sdk/pandar_utils.h"
+#include "pandar/pandar_utils.h"
 
-#include "pandar/tcp_command_client.h"
+#include "tcp_command_client.h"
 
 #include <fstream>
 #include <iostream>

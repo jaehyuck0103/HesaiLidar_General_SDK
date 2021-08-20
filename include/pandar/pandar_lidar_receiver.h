@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pandarGeneral_sdk//pandar_packet_parsers.h"
+#include "pandar/pandar_config.h"
 
 #include <asio.hpp>
 
@@ -10,6 +10,16 @@
 #include <vector>
 
 using asio::ip::udp;
+
+struct HS_LIDAR_Block {
+    uint16_t azimuth;             // Azimuth = RealAzimuth * 100
+    std::vector<uint8_t> payload; // num_lasers * 3 bytes (2bytes raw_distance + 1byte intensity)
+};
+
+struct HS_LIDAR_Packet {
+    std::vector<HS_LIDAR_Block> blocks;
+    double timestamp;
+};
 
 class PandarLidarReceiver {
   public:
