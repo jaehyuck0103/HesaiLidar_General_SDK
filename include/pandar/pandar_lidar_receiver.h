@@ -26,6 +26,7 @@ struct HS_LIDAR_Packet {
 class PandarLidarReceiver {
   public:
     PandarLidarReceiver(
+        const std::string &lidar_ip,
         uint16_t lidar_port,
         std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
         const PandarConfig &cfg);
@@ -37,6 +38,7 @@ class PandarLidarReceiver {
 
   private:
     std::vector<uint8_t> frame_buffer_;
+    const std::string lidar_ip_;
     const std::function<void(const std::vector<uint8_t> &cld, time_point<system_clock> &timestamp)>
         pcl_callback_;
 

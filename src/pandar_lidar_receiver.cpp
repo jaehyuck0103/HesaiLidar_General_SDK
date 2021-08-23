@@ -4,10 +4,12 @@
 #include <iostream>
 
 PandarLidarReceiver::PandarLidarReceiver(
+    const std::string &lidar_ip,
     uint16_t lidar_port,
     std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
     const PandarConfig &cfg)
-    : pcl_callback_(pcl_callback),
+    : lidar_ip_(lidar_ip),
+      pcl_callback_(pcl_callback),
       cfg_(cfg),
       socket_(io_context_, udp::endpoint(udp::v4(), lidar_port)) {
 
@@ -74,6 +76,9 @@ void PandarLidarReceiver::socketRecvHandler() {
         [this](const asio::error_code &ec, std::size_t bytes) {
             if (ec) {
                 std::cout << ec.message() << std::endl;
+            } else if (!lidar_ip_.empty() && lidar_ip_ != remote_endpoint_.address().to_string()) {
+                std::cout << "Packet from unknown ip address: "
+                          << remote_endpoint_.address().to_string() << "\n";
             } else {
                 recv_buffer_.resize(bytes);
                 processLidarPacket(recv_buffer_);

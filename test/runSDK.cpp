@@ -82,7 +82,7 @@ int main() {
         angle_corrections->second};
 
     PandarLidarReceiver pandarGeneral(
-        // "", // "192.168.1.201",
+        "127.0.0.1", // "192.168.1.201",
         2368,
         lidarCallback,
         pandar_config);
