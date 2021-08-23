@@ -16,12 +16,14 @@ add_library(asio INTERFACE)
 target_include_directories(asio INTERFACE third_party/asio/asio/include)
 target_link_libraries(asio INTERFACE pthread)
 
+add_subdirectory(third_party/nlohmann_json)
+
 add_library(
   ${PROJECT_NAME} SHARED
   src/pandar_gps_receiver.cpp src/pandar_lidar_receiver.cpp
   src/pandar_packet_parsers.cpp src/tcp_command_client.cpp src/pandar_utils.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE asio)
+target_link_libraries(${PROJECT_NAME} PRIVATE asio nlohmann_json::nlohmann_json)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   find_package(PCL REQUIRED)
