@@ -5,7 +5,7 @@
 
 PandarLidarReceiver::PandarLidarReceiver(
     uint16_t lidar_port,
-    std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
+    std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
     const PandarConfig &cfg)
     : pcl_callback_(pcl_callback),
       cfg_(cfg),
@@ -87,7 +87,6 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
 
     static uint16_t last_azimuth = 0;
     const uint16_t start_azimuth = cfg_.start_azimuth();
-    std::chrono::duration<double> timestamp = std::chrono::system_clock::now().time_since_epoch();
 
     if (auto pkt = parseLidarPacket(packet)) {
 
@@ -96,7 +95,7 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
             uint16_t curr_azimuth = pkt->blocks[i].azimuth;
 
             if (!isValidAzimuth(curr_azimuth)) {
-                std::cout << "Unvalid Azimuth: " << curr_azimuth << "\n";
+                std::cout << "Invalid Azimuth: " << curr_azimuth << "\n";
                 break;
             }
 
@@ -104,8 +103,11 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
                 (start_azimuth <= curr_azimuth && curr_azimuth < last_azimuth) ||
                 (curr_azimuth < last_azimuth && last_azimuth < start_azimuth)) {
 
-                pcl_callback_(frame_buffer_, timestamp.count());
-                std::fill(frame_buffer_.begin(), frame_buffer_.end(), 0);
+                if (timestamp_ != system_clock::time_point::min()) {
+                    pcl_callback_(frame_buffer_, timestamp_);
+                    std::fill(frame_buffer_.begin(), frame_buffer_.end(), 0);
+                }
+                timestamp_ = system_clock::now();
             }
 
             // Fill frame_buffer

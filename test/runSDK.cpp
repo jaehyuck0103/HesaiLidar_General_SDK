@@ -51,10 +51,14 @@ calcPointXYZI(const std::vector<uint8_t> &frame_buffer, const PandarConfig &cfg)
     return cloud;
 }
 
-void gpsCallback(int timestamp) { printf("gps: %d\n", timestamp); }
+void gpsCallback(int timestamp) { std::cout << "timestamp: " << timestamp << "\n"; }
 
-void lidarCallback(const std::vector<uint8_t> &cld, double timestamp) {
-    printf("timestamp: %lf,point_size: %ld\n", timestamp, cld.size());
+void lidarCallback(const std::vector<uint8_t> &cld, time_point<system_clock> &timestamp) {
+    std::cout << "timestamp: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     timestamp.time_since_epoch())
+                     .count()
+              << "\n";
 
     con_queue.try_push(cld);
 }

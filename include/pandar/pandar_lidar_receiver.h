@@ -10,6 +10,8 @@
 #include <vector>
 
 using asio::ip::udp;
+using std::chrono::system_clock;
+using std::chrono::time_point;
 
 struct HS_LIDAR_Block {
     uint16_t azimuth;             // Azimuth = RealAzimuth * 100
@@ -25,7 +27,7 @@ class PandarLidarReceiver {
   public:
     PandarLidarReceiver(
         uint16_t lidar_port,
-        std::function<void(const std::vector<uint8_t> &, double)> pcl_callback,
+        std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
         const PandarConfig &cfg);
 
     virtual ~PandarLidarReceiver();
@@ -35,7 +37,9 @@ class PandarLidarReceiver {
 
   private:
     std::vector<uint8_t> frame_buffer_;
-    const std::function<void(const std::vector<uint8_t> &cld, double timestamp)> pcl_callback_;
+    const std::function<void(const std::vector<uint8_t> &cld, time_point<system_clock> &timestamp)>
+        pcl_callback_;
+
     const PandarConfig cfg_;
 
     void processLidarPacket(const std::vector<uint8_t> &packet);
@@ -49,6 +53,8 @@ class PandarLidarReceiver {
             return false;
         }
     }
+
+    time_point<system_clock> timestamp_ = system_clock::time_point::min();
 
   private: // asio
     asio::io_context io_context_;
