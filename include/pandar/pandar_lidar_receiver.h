@@ -48,14 +48,6 @@ class PandarLidarReceiver {
     std::function<std::optional<HS_LIDAR_Packet>(const std::vector<uint8_t> &packet)>
         parseLidarPacket;
 
-    bool isValidAzimuth(uint16_t azimuth) {
-        if (azimuth < 36000 && azimuth % cfg_.azimuth_res() == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     time_point<system_clock> timestamp_ = system_clock::time_point::min();
 
   private: // asio

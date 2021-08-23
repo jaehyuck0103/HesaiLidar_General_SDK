@@ -99,7 +99,7 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
 
             uint16_t curr_azimuth = pkt->blocks[i].azimuth;
 
-            if (!isValidAzimuth(curr_azimuth)) {
+            if (!cfg_.isValidAzimuth(curr_azimuth)) {
                 std::cout << "Invalid Azimuth: " << curr_azimuth << "\n";
                 break;
             }
@@ -116,7 +116,7 @@ void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet)
             }
 
             // Fill frame_buffer
-            const uint16_t azimuth_idx = curr_azimuth / cfg_.azimuth_res();
+            const int azimuth_idx = cfg_.azimuthToAzimuthIdx(curr_azimuth);
             const int return_idx = i % cfg_.num_returns();
             const int buffer_idx = cfg_.get_frame_buffer_bytes_index(azimuth_idx, return_idx, 0);
             std::copy(

@@ -109,6 +109,7 @@ class PandarConfig {
     const std::vector<float> &elev_angle() const { return elev_angle_; }
     const std::vector<float> &azimuth_offset() const { return azimuth_offset_; }
 
+    // frame buffer
     float azimuth_res_deg() const { return azimuth_res_ / 100.0f; }
     int frame_buffer_width() const { return 36000 / azimuth_res_; }
     int num_returns() const { return dual_return_mode_ ? 2 : 1; }
@@ -123,6 +124,21 @@ class PandarConfig {
     }
     int get_frame_buffer_bytes_index(int azimuth_idx, int return_idx, int laser_idx) const {
         return get_frame_buffer_elem_index(azimuth_idx, return_idx, laser_idx) * elem_bytes;
+    }
+    int azimuthToAzimuthIdx(uint16_t azimuth) const {
+        return ((azimuth + 36000 - start_azimuth()) / azimuth_res()) % frame_buffer_width();
+    }
+    uint16_t azimuthIdxToAzimuth(int azimuth_idx) const {
+        return (azimuth_idx * azimuth_res() + start_azimuth()) % 36000;
+    }
+
+    // utils
+    bool isValidAzimuth(uint16_t azimuth) const {
+        if (azimuth < 36000 && azimuth % azimuth_res() == 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     // constexpr

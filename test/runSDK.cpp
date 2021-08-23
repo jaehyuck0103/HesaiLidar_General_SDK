@@ -33,15 +33,13 @@ calcPointXYZI(const std::vector<uint8_t> &frame_buffer, const PandarConfig &cfg)
                     continue;
                 }
 
+                const uint16_t azimuth = cfg.azimuthIdxToAzimuth(azimuth_idx);
+
                 float xyDistance = distance * cosf(degToRad(cfg.elev_angle()[laser_idx]));
-                float x =
-                    xyDistance *
-                    sinf(degToRad(
-                        cfg.azimuth_offset()[laser_idx] + azimuth_idx * cfg.azimuth_res_deg()));
-                float y =
-                    xyDistance *
-                    cosf(degToRad(
-                        cfg.azimuth_offset()[laser_idx] + azimuth_idx * cfg.azimuth_res_deg()));
+                float x = xyDistance *
+                          sinf(degToRad(cfg.azimuth_offset()[laser_idx] + azimuth / 100.0f));
+                float y = xyDistance *
+                          cosf(degToRad(cfg.azimuth_offset()[laser_idx] + azimuth / 100.0f));
                 float z = distance * sinf(degToRad(cfg.elev_angle()[laser_idx]));
 
                 cloud->emplace_back(x, y, z);
