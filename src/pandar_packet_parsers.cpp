@@ -6,16 +6,21 @@
 namespace PandarPacketParsers {
 
 double parseUTC(const uint8_t *buf) {
-    std::tm tTm;
-    tTm.tm_year = buf[0] + 100; // years since 1900
-    tTm.tm_mon = buf[1] - 1;    // years since 1900
-    tTm.tm_mday = buf[2];
-    tTm.tm_hour = buf[3];
-    tTm.tm_min = buf[4];
-    tTm.tm_sec = buf[5];
-    tTm.tm_isdst = 0;
+    // Do not use for a while
+    if constexpr (false) {
+        std::tm tTm;
+        tTm.tm_year = buf[0] + 100; // years since 1900
+        tTm.tm_mon = buf[1] - 1;    // years since 1900
+        tTm.tm_mday = buf[2];
+        tTm.tm_hour = buf[3];
+        tTm.tm_min = buf[4];
+        tTm.tm_sec = buf[5];
+        tTm.tm_isdst = 0;
 
-    return static_cast<double>(std::mktime(&tTm));
+        return static_cast<double>(std::mktime(&tTm));
+    } else {
+        return 0.0;
+    }
 }
 
 std::optional<HS_LIDAR_Packet>
