@@ -2,7 +2,6 @@
 build/
 compile_commands.json
 /test/test_data/
-/extern/
 
 
 # Prerequisites
