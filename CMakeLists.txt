@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_VERBOSE_MAKEFILE true)
 
 add_library(asio INTERFACE)
-target_include_directories(asio INTERFACE extern/asio/asio/include)
+target_include_directories(asio INTERFACE third_party/asio/asio/include)
 target_link_libraries(asio INTERFACE pthread)
 
 add_library(
