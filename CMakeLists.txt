@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(PandarGeneralSDK)
+project(PandarSDK)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -19,19 +19,21 @@ target_link_libraries(asio INTERFACE pthread)
 add_subdirectory(third_party/nlohmann_json)
 
 add_library(
-  ${PROJECT_NAME} SHARED
+  ${PROJECT_NAME}
   src/pandar_gps_receiver.cpp src/pandar_lidar_receiver.cpp
   src/pandar_packet_parsers.cpp src/tcp_command_client.cpp src/pandar_utils.cpp)
-target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} PRIVATE asio nlohmann_json::nlohmann_json)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE nlohmann_json::nlohmann_json
+  PUBLIC asio)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   find_package(PCL REQUIRED)
 
   add_executable(runSDK test/runSDK.cpp)
-  target_include_directories(runSDK PRIVATE include ${PCL_INCLUDE_DIRS})
-  target_link_libraries(runSDK PRIVATE ${PROJECT_NAME} ${PCL_LIBRARIES} pthread
-                                       tbb asio)
+  target_include_directories(runSDK PRIVATE ${PCL_INCLUDE_DIRS})
+  target_link_libraries(runSDK PRIVATE ${PROJECT_NAME} ${PCL_LIBRARIES} tbb)
 
   add_executable(sendPcap test/sendPcapPacket.cpp test/pcap_reader.cpp)
   target_link_libraries(sendPcap PRIVATE pcap asio)
