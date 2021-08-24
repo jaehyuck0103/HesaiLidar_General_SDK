@@ -164,27 +164,10 @@ getFallbackAngleCorrection(std::string lidar_type) {
     return {{elev_angle, azimuth_offset}};
 }
 
-void writePandarConfigJson(const PandarConfig &cfg, const std::string &file_path) {
+void writePandarConfigJson(const std::string &file_path, const PandarConfig &cfg) {
     nlohmann::json j;
 
-    switch (cfg.lidar_model()) {
-    case LidarModel::Pandar64:
-        j["lidar_model"] = "Pandar64";
-        break;
-    case LidarModel::Pandar40P:
-        j["lidar_model"] = "Pandar40P";
-        break;
-    case LidarModel::PandarQT:
-        j["lidar_model"] = "PandarQT";
-        break;
-    case LidarModel::PandarXT_16:
-        j["lidar_model"] = "PandarXT_16";
-        break;
-    case LidarModel::PandarXT_32:
-        j["lidar_model"] = "PandarXT_32";
-        break;
-    }
-
+    j["lidar_model"] = lidar_model_to_str[cfg.lidar_model()];
     j["dual_return_mode"] = cfg.dual_return_mode();
     j["fps"] = cfg.fps();
     j["start_azimuth"] = cfg.start_azimuth();
@@ -200,25 +183,8 @@ PandarConfig readPandarConfigJson(const std::string &file_path) {
     nlohmann::json j;
     i >> j;
 
-    std::string lidar_model_str = j["lidar_model"].get<std::string>();
-    LidarModel lidar_model;
-    if (lidar_model_str == "Pandar64") {
-        lidar_model = LidarModel::Pandar64;
-    } else if (lidar_model_str == "Pandar40P") {
-        lidar_model = LidarModel::Pandar40P;
-    } else if (lidar_model_str == "PandarQT") {
-        lidar_model = LidarModel::PandarQT;
-    } else if (lidar_model_str == "PandarXT_16") {
-        lidar_model = LidarModel::PandarXT_16;
-    } else if (lidar_model_str == "PandarXT_32") {
-        lidar_model = LidarModel::PandarXT_32;
-    } else {
-        std::cout << "Unknown LidarModel: " << lidar_model_str << "\n";
-        std::abort();
-    }
-
     return {
-        lidar_model,
+        lidar_model_from_str[j["lidar_model"].get<std::string>()],
         j["dual_return_mode"].get<bool>(),
         j["fps"].get<int>(),
         j["start_azimuth"].get<uint16_t>(),

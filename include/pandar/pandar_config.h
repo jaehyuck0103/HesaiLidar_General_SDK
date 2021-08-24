@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <map>
 #include <vector>
 
 enum class LidarModel {
@@ -10,6 +11,22 @@ enum class LidarModel {
     PandarQT,
     PandarXT_16,
     PandarXT_32,
+};
+
+inline std::map<LidarModel, std::string> lidar_model_to_str = {
+    {LidarModel::Pandar64, "Pandar64"},
+    {LidarModel::Pandar40P, "Pandar40P"},
+    {LidarModel::PandarQT, "PandarQT"},
+    {LidarModel::PandarXT_16, "PandarXT_16"},
+    {LidarModel::PandarXT_32, "PandarXT_32"},
+};
+
+inline std::map<std::string, LidarModel> lidar_model_from_str = {
+    {"Pandar64", LidarModel::Pandar64},
+    {"Pandar40P", LidarModel::Pandar40P},
+    {"PandarQT", LidarModel::PandarQT},
+    {"PandarXT_16", LidarModel::PandarXT_16},
+    {"PandarXT_32", LidarModel::PandarXT_32},
 };
 
 class PandarConfig {

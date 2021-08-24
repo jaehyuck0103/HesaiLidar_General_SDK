@@ -16,7 +16,7 @@ std::optional<std::string> getAngleCorrectionFromDevice(
 std::optional<std::pair<std::vector<float>, std::vector<float>>>
 getFallbackAngleCorrection(std::string lidar_type);
 
-void writePandarConfigJson(const PandarConfig &cfg, const std::string &file_path);
+void writePandarConfigJson(const std::string &file_path, const PandarConfig &cfg);
 
 PandarConfig readPandarConfigJson(const std::string &file_path);
 } // namespace PandarUtils
