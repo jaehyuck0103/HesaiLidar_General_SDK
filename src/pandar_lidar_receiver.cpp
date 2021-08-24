@@ -5,13 +5,13 @@
 
 PandarLidarReceiver::PandarLidarReceiver(
     const std::string &lidar_ip,
-    uint16_t lidar_port,
+    uint16_t recv_port,
     std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
     const PandarConfig &cfg)
     : lidar_ip_(lidar_ip),
       pcl_callback_(pcl_callback),
       cfg_(cfg),
-      socket_(io_context_, udp::endpoint(udp::v4(), lidar_port)) {
+      socket_(io_context_, udp::endpoint(udp::v4(), recv_port)) {
 
     // Init frame_buffer_
     // W x (1,2) x H x 3bytes

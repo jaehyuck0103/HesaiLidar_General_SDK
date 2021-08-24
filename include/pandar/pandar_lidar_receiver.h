@@ -27,7 +27,7 @@ class PandarLidarReceiver {
   public:
     PandarLidarReceiver(
         const std::string &lidar_ip,
-        uint16_t lidar_port,
+        uint16_t recv_port,
         std::function<void(const std::vector<uint8_t> &, time_point<system_clock> &)> pcl_callback,
         const PandarConfig &cfg);
 
