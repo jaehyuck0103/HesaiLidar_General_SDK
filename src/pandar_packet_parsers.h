@@ -9,15 +9,12 @@
 namespace PandarPacketParsers {
 
 std::optional<HS_LIDAR_Packet>
-pandar40p(const PandarConfig &cfg, const std::vector<uint8_t> &recvbuf);
+pandar40p(const PandarConfig &cfg, std::span<const uint8_t> recvbuf);
 
-std::optional<HS_LIDAR_Packet>
-pandar64(const PandarConfig &cfg, const std::vector<uint8_t> &recvbuf);
+std::optional<HS_LIDAR_Packet> pandar64(const PandarConfig &cfg, std::span<const uint8_t> recvbuf);
 
-std::optional<HS_LIDAR_Packet>
-pandarQT(const PandarConfig &cfg, const std::vector<uint8_t> &recvbuf);
+std::optional<HS_LIDAR_Packet> pandarQT(const PandarConfig &cfg, std::span<const uint8_t> recvbuf);
 
-std::optional<HS_LIDAR_Packet>
-pandarXT(const PandarConfig &cfg, const std::vector<uint8_t> &recvbuf);
+std::optional<HS_LIDAR_Packet> pandarXT(const PandarConfig &cfg, std::span<const uint8_t> recvbuf);
 
 } // namespace PandarPacketParsers

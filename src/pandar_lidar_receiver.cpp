@@ -19,23 +19,23 @@ PandarLidarReceiver::PandarLidarReceiver(
 
     switch (cfg_.lidar_model()) {
     case LidarModel::Pandar40P:
-        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+        parseLidarPacket = [this](std::span<const uint8_t> packet) {
             return PandarPacketParsers::pandar40p(cfg_, packet);
         };
         break;
     case LidarModel::Pandar64:
-        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+        parseLidarPacket = [this](std::span<const uint8_t> packet) {
             return PandarPacketParsers::pandar64(cfg_, packet);
         };
         break;
     case LidarModel::PandarQT:
-        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+        parseLidarPacket = [this](std::span<const uint8_t> packet) {
             return PandarPacketParsers::pandarQT(cfg_, packet);
         };
         break;
     case LidarModel::PandarXT_16:
     case LidarModel::PandarXT_32:
-        parseLidarPacket = [this](const std::vector<uint8_t> &packet) {
+        parseLidarPacket = [this](std::span<const uint8_t> packet) {
             return PandarPacketParsers::pandarXT(cfg_, packet);
         };
         break;
@@ -88,7 +88,7 @@ void PandarLidarReceiver::socketRecvHandler() {
         });
 }
 
-void PandarLidarReceiver::processLidarPacket(const std::vector<uint8_t> &packet) {
+void PandarLidarReceiver::processLidarPacket(std::span<const uint8_t> packet) {
 
     static uint16_t last_azimuth = 0;
     const uint16_t start_azimuth = cfg_.start_azimuth();

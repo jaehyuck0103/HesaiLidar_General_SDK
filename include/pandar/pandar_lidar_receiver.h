@@ -5,6 +5,8 @@
 #include <asio.hpp>
 
 #include <functional>
+#include <optional>
+#include <span>
 #include <string>
 #include <thread>
 #include <vector>
@@ -44,8 +46,8 @@ class PandarLidarReceiver {
 
     const PandarConfig cfg_;
 
-    void processLidarPacket(const std::vector<uint8_t> &packet);
-    std::function<std::optional<HS_LIDAR_Packet>(const std::vector<uint8_t> &packet)>
+    void processLidarPacket(std::span<const uint8_t> packet);
+    std::function<std::optional<HS_LIDAR_Packet>(std::span<const uint8_t> packet)>
         parseLidarPacket;
 
     time_point<system_clock> timestamp_ = system_clock::time_point::min();

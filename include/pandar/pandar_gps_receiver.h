@@ -3,6 +3,7 @@
 #include <asio.hpp>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
